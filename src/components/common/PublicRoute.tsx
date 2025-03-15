@@ -2,9 +2,10 @@ import { Navigate, Outlet } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
 
-const PrivateRoute = () => {
+const PublicRoute = () => {
   const adminInfo = useSelector((state: RootState) => state.auth.adminInfo);
-  return adminInfo ? <Outlet /> : <Navigate to="/login" replace />;
+
+  return adminInfo ? <Navigate to="/" replace /> : <Outlet />;
 };
 
-export default PrivateRoute;
+export default PublicRoute;
