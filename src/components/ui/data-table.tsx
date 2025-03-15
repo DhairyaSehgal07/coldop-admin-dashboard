@@ -20,7 +20,8 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
-  MoreVertical,
+  Search,
+  SlidersHorizontal,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -42,6 +43,7 @@ interface DataTableProps<TData, TValue> {
   onRowClick?: (row: TData) => void;
   emptyMessage?: string;
   isLoading?: boolean;
+  title?: string;
 }
 
 export function DataTable<TData, TValue>({
@@ -52,8 +54,9 @@ export function DataTable<TData, TValue>({
   pageSize = 10,
   className = "",
   onRowClick,
-  emptyMessage = "No results.",
+  emptyMessage = "No results found.",
   isLoading = false,
+  title,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
@@ -61,6 +64,7 @@ export function DataTable<TData, TValue>({
   );
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({});
+  const [globalFilter, setGlobalFilter] = React.useState<string>("");
   const [pagination, setPagination] = React.useState({
     pageIndex: 0,
     pageSize: pageSize,
@@ -90,64 +94,94 @@ export function DataTable<TData, TValue>({
       columnFilters,
       columnVisibility,
       pagination,
+      globalFilter,
     },
+    onGlobalFilterChange: setGlobalFilter,
   });
 
   // Loading state
   if (isLoading) {
     return (
       <div className="w-full h-64 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600"></div>
       </div>
     );
   }
 
   return (
-    <div className={`bg-white rounded-lg shadow overflow-hidden ${className}`}>
+    <div
+      className={`bg-white rounded-lg shadow-lg overflow-hidden ${className}`}
+    >
       {/* Header Controls */}
+      <div className="px-6 py-4 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-3 sm:space-y-0">
+        {title && (
+          <h3 className="text-lg font-medium text-gray-800">{title}</h3>
+        )}
+
+        <div className="flex items-center space-x-2 w-full sm:w-auto">
+          <div className="relative flex-grow sm:flex-grow-0 sm:w-64">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search className="h-4 w-4 text-gray-400" />
+            </div>
+            <Input
+              placeholder="Search all columns..."
+              value={globalFilter ?? ""}
+              onChange={(e) => setGlobalFilter(String(e.target.value))}
+              className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            />
+          </div>
+
+          {showColumnFilters && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-1 border border-gray-300 bg-white hover:bg-gray-50"
+                >
+                  <SlidersHorizontal className="h-4 w-4 text-gray-500" />
+                  <span className="hidden sm:inline">Columns</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                className="w-48 bg-white rounded-md shadow-lg"
+              >
+                {table
+                  .getAllColumns()
+                  .filter((column) => column.getCanHide())
+                  .map((column) => (
+                    <DropdownMenuCheckboxItem
+                      key={column.id}
+                      className="capitalize text-sm text-gray-700 hover:bg-gray-50"
+                      checked={column.getIsVisible()}
+                      onCheckedChange={(value) =>
+                        column.toggleVisibility(!!value)
+                      }
+                    >
+                      {column.id}
+                    </DropdownMenuCheckboxItem>
+                  ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>
+      </div>
 
       {/* Table */}
-      <div className="overflow-x-auto">
-        {showColumnFilters && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <div className="text-right px-4  bg-gray-50">
-                <button className="cursor-pointer">
-                  <MoreVertical className="h-4 w-4 " />
-                </button>
-              </div>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {table
-                .getAllColumns()
-                .filter((column) => column.getCanHide())
-                .map((column) => (
-                  <DropdownMenuCheckboxItem
-                    key={column.id}
-                    className="capitalize"
-                    checked={column.getIsVisible()}
-                    onCheckedChange={(value) =>
-                      column.toggleVisibility(!!value)
-                    }
-                  >
-                    {column.id}
-                  </DropdownMenuCheckboxItem>
-                ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
+      <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
         <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+          <thead>
             {table.getHeaderGroups().map((headerGroup) => (
-              <tr key={headerGroup.id}>
+              <tr key={headerGroup.id} className="bg-gray-50">
                 {headerGroup.headers.map((header) => (
                   <th
                     key={header.id}
                     scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    className="group px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider"
                   >
                     {header.isPlaceholder ? null : (
-                      <div className="flex flex-col">
+                      <div className="flex flex-col space-y-2">
                         <div
                           className={`flex items-center ${
                             header.column.getCanSort()
@@ -161,22 +195,31 @@ export function DataTable<TData, TValue>({
                             header.getContext()
                           )}
 
-                          {{
-                            asc: <ChevronUp className="ml-1 h-4 w-4" />,
-                            desc: <ChevronDown className="ml-1 h-4 w-4" />,
-                          }[header.column.getIsSorted() as string] ?? null}
+                          <span className="ml-2 flex-none opacity-0 group-hover:opacity-100 transition-opacity">
+                            {{
+                              asc: (
+                                <ChevronUp className="h-4 w-4 text-gray-500" />
+                              ),
+                              desc: (
+                                <ChevronDown className="h-4 w-4 text-gray-500" />
+                              ),
+                            }[header.column.getIsSorted() as string] ??
+                              (header.column.getCanSort() ? (
+                                <ChevronDown className="h-4 w-4 text-gray-300" />
+                              ) : null)}
+                          </span>
                         </div>
                         {header.column.getCanFilter() &&
                           header.column.getIsVisible() && (
                             <Input
-                              placeholder={`Filter ${header.column.id}...`}
+                              placeholder={`Filter ${header.column.id}`}
                               value={
                                 (header.column.getFilterValue() as string) ?? ""
                               }
                               onChange={(event) =>
                                 header.column.setFilterValue(event.target.value)
                               }
-                              className="mt-2 w-full pl-2 pr-4 py-1 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                              className="w-full text-xs px-3 py-1.5 border rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
                             />
                           )}
                       </div>
@@ -188,11 +231,13 @@ export function DataTable<TData, TValue>({
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
+              table.getRowModel().rows.map((row, index) => (
                 <tr
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
-                  className={`hover:bg-gray-50 ${
+                  className={`${
+                    index % 2 === 0 ? "bg-white" : "bg-gray-50"
+                  } hover:bg-indigo-50 transition-colors ${
                     onRowClick ? "cursor-pointer" : ""
                   }`}
                   onClick={() => onRowClick && onRowClick(row.original)}
@@ -200,7 +245,7 @@ export function DataTable<TData, TValue>({
                   {row.getVisibleCells().map((cell) => (
                     <td
                       key={cell.id}
-                      className="px-6 py-4 whitespace-nowrap text-sm text-gray-600"
+                      className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-700"
                     >
                       {flexRender(
                         cell.column.columnDef.cell,
@@ -214,9 +259,15 @@ export function DataTable<TData, TValue>({
               <tr>
                 <td
                   colSpan={columns.length}
-                  className="px-6 py-8 text-center text-gray-500"
+                  className="px-6 py-12 text-center text-gray-500 text-sm border-t border-gray-200"
                 >
-                  {emptyMessage}
+                  <div className="flex flex-col items-center justify-center">
+                    <p className="text-gray-500 text-lg mb-1">{emptyMessage}</p>
+                    <p className="text-gray-400 text-sm">
+                      Try adjusting your search or filter to find what you're
+                      looking for.
+                    </p>
+                  </div>
                 </td>
               </tr>
             )}
@@ -226,7 +277,7 @@ export function DataTable<TData, TValue>({
 
       {/* Pagination */}
       {showPagination && table.getPageCount() > 0 && (
-        <div className="px-6 py-4 flex items-center justify-between border-t border-gray-200">
+        <div className="px-6 py-4 flex items-center justify-between border-t border-gray-200 bg-gray-50">
           <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
             <div>
               <p className="text-sm text-gray-700">
@@ -264,7 +315,7 @@ export function DataTable<TData, TValue>({
                   className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <span className="sr-only">First</span>
-                  <ChevronsLeft className="h-5 w-5" />
+                  <ChevronsLeft className="h-4 w-4" />
                 </Button>
                 <Button
                   variant="outline"
@@ -274,7 +325,7 @@ export function DataTable<TData, TValue>({
                   className="relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <span className="sr-only">Previous</span>
-                  <ChevronLeft className="h-5 w-5" />
+                  <ChevronLeft className="h-4 w-4" />
                 </Button>
 
                 {/* Page numbers */}
@@ -301,7 +352,7 @@ export function DataTable<TData, TValue>({
                       onClick={() => table.setPageIndex(pageNumber)}
                       className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
                         pageNumber === pageIndex
-                          ? "z-10 bg-indigo-50 border-indigo-500 text-indigo-600"
+                          ? "z-10 bg-indigo-600 border-indigo-600 text-white"
                           : "bg-white border-gray-300 text-gray-500 hover:bg-gray-50"
                       }`}
                     >
@@ -318,7 +369,7 @@ export function DataTable<TData, TValue>({
                   className="relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <span className="sr-only">Next</span>
-                  <ChevronRight className="h-5 w-5" />
+                  <ChevronRight className="h-4 w-4" />
                 </Button>
                 <Button
                   variant="outline"
@@ -328,29 +379,33 @@ export function DataTable<TData, TValue>({
                   className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <span className="sr-only">Last</span>
-                  <ChevronsRight className="h-5 w-5" />
+                  <ChevronsRight className="h-4 w-4" />
                 </Button>
               </nav>
             </div>
           </div>
 
           {/* Mobile pagination */}
-          <div className="flex-1 flex justify-between sm:hidden">
+          <div className="flex items-center justify-between w-full sm:hidden">
             <Button
               variant="outline"
               size="sm"
               onClick={() => table.previousPage()}
               disabled={!table.getCanPreviousPage()}
-              className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Previous
             </Button>
+            <span className="text-sm text-gray-700">
+              Page {table.getState().pagination.pageIndex + 1} of{" "}
+              {table.getPageCount()}
+            </span>
             <Button
               variant="outline"
               size="sm"
               onClick={() => table.nextPage()}
               disabled={!table.getCanNextPage()}
-              className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="relative inline-flex items-center px-4 py-2 ml-3 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Next
             </Button>

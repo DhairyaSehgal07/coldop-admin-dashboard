@@ -121,8 +121,8 @@ const columns: ColumnDef<Payment>[] = [
 
 export function PaymentsPage() {
   return (
-    <div className="container mx-auto py-10">
-      <h1 className="text-2xl font-bold mb-4">Payments</h1>
+    <div>
+      <h1 className="text-2xl font-bold mb-4">Cold-Storages</h1>
       <DataTable columns={columns} data={data} />
     </div>
   );
