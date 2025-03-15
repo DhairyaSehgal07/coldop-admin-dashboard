@@ -9,13 +9,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 const Dashboard = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
+  const handleOutsideClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (isSidebarOpen && !(e.target as HTMLElement).closest("aside")) {
+      setIsSidebarOpen(false);
+    }
+  };
+
   return (
-    <div className="flex h-screen bg-muted/20">
+    <div className="flex h-screen bg-muted/20" onClick={handleOutsideClick}>
       {/* Sidebar Component */}
-      <Sidebar
-        isSidebarOpen={isSidebarOpen}
-        setIsSidebarOpen={setIsSidebarOpen}
-      />
+      <Sidebar isSidebarOpen={isSidebarOpen} />
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">

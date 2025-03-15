@@ -2,104 +2,47 @@ import React from "react";
 import { Home, Settings, Users, Package, Warehouse } from "lucide-react";
 import { Link } from "react-router-dom";
 
-// Import Shadcn components
-import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
-
 interface SidebarProps {
   isSidebarOpen: boolean;
-  setIsSidebarOpen?: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({
-  isSidebarOpen,
-  setIsSidebarOpen,
-}) => {
-  // Navigation items
-  const navItems = [
-    { icon: <Home className="h-5 w-5 mr-3" />, label: "Dashboard", path: "/" },
-    {
-      icon: <Warehouse className="h-5 w-5 mr-3" />,
-      label: "Cold-storages",
-      path: "/cold-storages",
-    },
-    {
-      icon: <Users className="h-5 w-5 mr-3" />,
-      label: "Farmers",
-      path: "/farmers",
-    },
-    {
-      icon: <Package className="h-5 w-5 mr-3" />,
-      label: "Inventory",
-      path: "/inventory",
-    },
-    {
-      icon: <Settings className="h-5 w-5 mr-3" />,
-      label: "Settings",
-      path: "/settings",
-    },
-  ];
-
-  // SidebarContent component to avoid duplication
-  const SidebarContent = () => (
-    <>
-      <nav className="mt-6 px-2">
-        {navItems.map((item, index) => (
-          <Link key={index} to={item.path} className="block mb-1">
-            <Button
-              variant="ghost"
-              className="w-full justify-start text-white hover:bg-primary-foreground/20"
-              onClick={() => setIsSidebarOpen && setIsSidebarOpen(false)}
-            >
-              {item.icon}
-              <span>{item.label}</span>
-            </Button>
-          </Link>
-        ))}
-      </nav>
-    </>
-  );
-
-  // Mobile view uses Sheet component
-  const MobileSidebar = () => (
-    <Sheet open={isSidebarOpen} onOpenChange={setIsSidebarOpen}>
-      <SheetContent
-        side="left"
-        className="p-0 bg-primary text-white border-r-0 w-64"
-      >
-        <SheetHeader className="p-4 border-b border-primary-foreground/20">
-          <SheetTitle className="text-white text-xl">Coldop Admin</SheetTitle>
-        </SheetHeader>
-        <ScrollArea className="h-[calc(100vh-4rem)]">
-          <SidebarContent />
-        </ScrollArea>
-      </SheetContent>
-    </Sheet>
-  );
-
-  // Desktop view uses fixed sidebar
-  const DesktopSidebar = () => (
-    <aside className="bg-primary text-white w-64 h-full hidden md:block">
-      <div className="p-4 border-b border-primary-foreground/20">
+const Sidebar: React.FC<SidebarProps> = ({ isSidebarOpen }) => {
+  return (
+    <aside
+      className={`bg-indigo-800 text-white w-64 fixed h-full transition-transform duration-300 ease-in-out z-20 ${
+        isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+      } md:translate-x-0 md:relative md:z-0`}
+    >
+      <div className="p-4 border-b border-indigo-700">
         <h2 className="text-xl font-bold">Coldop Admin</h2>
       </div>
-      <ScrollArea className="h-[calc(100vh-4rem)]">
-        <SidebarContent />
-      </ScrollArea>
+      <nav className="mt-6">
+        <Link to="/">
+          <div className="px-4 py-3 flex items-center hover:bg-indigo-700 cursor-pointer rounded mx-2 mb-1">
+            <Home className="h-5 w-5 mr-3" />
+            <span>Dashboard</span>
+          </div>
+        </Link>
+        <Link to="/cold-storages">
+          <div className="px-4 py-3 flex items-center hover:bg-indigo-700 cursor-pointer rounded mx-2 mb-1">
+            <Warehouse className="h-5 w-5 mr-3" />
+            <span>Cold-storages</span>
+          </div>
+        </Link>
+        <div className="px-4 py-3 flex items-center hover:bg-indigo-700 cursor-pointer rounded mx-2 mb-1">
+          <Users className="h-5 w-5 mr-3" />
+          <span>Farmers</span>
+        </div>
+        <div className="px-4 py-3 flex items-center hover:bg-indigo-700 cursor-pointer rounded mx-2 mb-1">
+          <Package className="h-5 w-5 mr-3" />
+          <span>Inventory</span>
+        </div>
+        <div className="px-4 py-3 flex items-center hover:bg-indigo-700 cursor-pointer rounded mx-2 mb-1">
+          <Settings className="h-5 w-5 mr-3" />
+          <span>Settings</span>
+        </div>
+      </nav>
     </aside>
-  );
-
-  return (
-    <>
-      <MobileSidebar />
-      <DesktopSidebar />
-    </>
   );
 };
 
