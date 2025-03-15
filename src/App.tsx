@@ -1,13 +1,10 @@
 import { Outlet } from "react-router-dom";
-import Navbar from "./components/Navbar";
-import Container from "./components/Container";
+import { Toaster } from "react-hot-toast";
 const App = () => {
   return (
     <>
-      <Navbar />
-      <Container>
-        <Outlet />
-      </Container>
+      <Toaster position="top-center" reverseOrder={false} />
+      <Outlet />
     </>
   );
 };
