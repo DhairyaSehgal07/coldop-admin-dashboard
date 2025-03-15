@@ -15,6 +15,7 @@ import LoginScreen from "./screens/LoginScreen.tsx";
 import PrivateRoute from "./components/common/PrivateRoute.tsx";
 import DashboardScreen from "./screens/DashboardScreen.tsx";
 import PublicRoute from "./components/common/PublicRoute.tsx";
+import ColdStorageScreen from "./screens/ColdStorageScreen.tsx";
 
 // Initialize the Query Client
 const queryClient = new QueryClient();
@@ -24,6 +25,7 @@ const router = createBrowserRouter(
     <Route path="/" element={<App />}>
       <Route path="" element={<PrivateRoute />}>
         <Route index element={<DashboardScreen />} />
+        <Route path="/cold-storages" element={<ColdStorageScreen />} />
       </Route>
 
       <Route path="" element={<PublicRoute />}>
