@@ -1,42 +1,29 @@
 import { useState } from "react";
-import TopBar from "../components/common/TopBar";
-import Sidebar from "../components/common/Sidebar";
+import TopBar from "../../components/common/TopBar";
+import Sidebar from "../../components/common/Sidebar";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
-import { BASE_URL } from "../utils/const";
-import Loader from "../components/common/Loader";
+import { BASE_URL } from "../../utils/const";
+import Loader from "../../components/common/Loader";
+import { DataTable } from "@/components/ui/data-table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Building, Users, BadgeCheck } from "lucide-react";
-import { PaymentsPage } from "@/test/payments";
-
-// Define types for the API response
-interface ColdStorageDetails {
-  coldStorageName: string;
-  coldStorageAddress: string;
-  coldStorageContactNumber: string;
-  capacity: number;
-}
-
-interface StoreAdmin {
-  _id: string;
-  name: string;
-  coldStorageDetails: ColdStorageDetails;
-  registeredFarmers: string[];
-  personalAddress: string;
-  mobileNumber: string;
-  storeAdminId: number;
-  isActive: boolean;
-}
+import { columns, ColdStorageResponse, StoreAdmin } from "./columnDefinitions";
+import { useNavigate } from "react-router-dom";
 
 const ColdStorageScreen = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const navigate = useNavigate();
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ["coldStorages"],
     queryFn: async () => {
-      const response = await axios.get(`${BASE_URL}/cold-storages`, {
-        withCredentials: true,
-      });
+      const response = await axios.get<ColdStorageResponse>(
+        `${BASE_URL}/cold-storages`,
+        {
+          withCredentials: true,
+        }
+      );
       if (response.status !== 200) {
         throw new Error("Failed to fetch cold storages");
       }
@@ -48,6 +35,10 @@ const ColdStorageScreen = () => {
     if (isSidebarOpen && !(e.target as HTMLElement).closest("aside")) {
       setIsSidebarOpen(false);
     }
+  };
+
+  const handleRowClick = (row: StoreAdmin) => {
+    navigate(`/cold-storage/${row._id}`);
   };
 
   // Calculate summary metrics
@@ -137,8 +128,25 @@ const ColdStorageScreen = () => {
                 </Card>
               </div>
 
-              {/* Recent Cold Storages */}
-              <PaymentsPage />
+              {/* Cold Storages Data Table */}
+              <div className="bg-white rounded-lg shadow">
+                <div className="p-4">
+                  <h2 className="text-lg font-semibold mb-4">
+                    Cold Storage List
+                  </h2>
+                  {data?.storeAdmins && data.storeAdmins.length > 0 ? (
+                    <DataTable
+                      onRowClick={handleRowClick}
+                      columns={columns}
+                      data={data.storeAdmins}
+                    />
+                  ) : (
+                    <div className="text-center p-4 text-muted-foreground">
+                      No cold storage data available.
+                    </div>
+                  )}
+                </div>
+              </div>
             </>
           )}
         </main>

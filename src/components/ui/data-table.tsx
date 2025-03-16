@@ -14,8 +14,6 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import {
-  ChevronDown,
-  ChevronUp,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
@@ -39,6 +37,7 @@ interface DataTableProps<TData, TValue> {
   showColumnFilters?: boolean;
   showPagination?: boolean;
   pageSize?: number;
+  getRowNavigationLink?: (row: TData) => string;
   className?: string;
   onRowClick?: (row: TData) => void;
   emptyMessage?: string;
@@ -110,7 +109,7 @@ export function DataTable<TData, TValue>({
 
   return (
     <div
-      className={`bg-white rounded-lg shadow-lg overflow-hidden ${className}`}
+      className={`bg-white border rounded-lg shadow-lg overflow-hidden ${className}`}
     >
       {/* Header Controls */}
       <div className="px-6 py-4 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-3 sm:space-y-0">
@@ -183,7 +182,7 @@ export function DataTable<TData, TValue>({
                     {header.isPlaceholder ? null : (
                       <div className="flex flex-col space-y-2">
                         <div
-                          className={`flex items-center ${
+                          className={`flex items-center justify-between ${
                             header.column.getCanSort()
                               ? "cursor-pointer select-none"
                               : ""
@@ -194,20 +193,6 @@ export function DataTable<TData, TValue>({
                             header.column.columnDef.header,
                             header.getContext()
                           )}
-
-                          <span className="ml-2 flex-none opacity-0 group-hover:opacity-100 transition-opacity">
-                            {{
-                              asc: (
-                                <ChevronUp className="h-4 w-4 text-gray-500" />
-                              ),
-                              desc: (
-                                <ChevronDown className="h-4 w-4 text-gray-500" />
-                              ),
-                            }[header.column.getIsSorted() as string] ??
-                              (header.column.getCanSort() ? (
-                                <ChevronDown className="h-4 w-4 text-gray-300" />
-                              ) : null)}
-                          </span>
                         </div>
                         {header.column.getCanFilter() &&
                           header.column.getIsVisible() && (

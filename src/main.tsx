@@ -15,7 +15,7 @@ import LoginScreen from "./screens/LoginScreen.tsx";
 import PrivateRoute from "./components/common/PrivateRoute.tsx";
 import DashboardScreen from "./screens/DashboardScreen.tsx";
 import PublicRoute from "./components/common/PublicRoute.tsx";
-import ColdStorageScreen from "./screens/ColdStorageScreen.tsx";
+import ColdStorageScreen from "./screens/ColdStorageScreen/index.tsx";
 
 // Initialize the Query Client
 const queryClient = new QueryClient();

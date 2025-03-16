@@ -122,7 +122,6 @@ const columns: ColumnDef<Payment>[] = [
 export function PaymentsPage() {
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-4">Cold-Storages</h1>
       <DataTable columns={columns} data={data} />
     </div>
   );
