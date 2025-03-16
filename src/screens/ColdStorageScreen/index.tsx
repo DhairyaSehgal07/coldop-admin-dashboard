@@ -37,8 +37,10 @@ const ColdStorageScreen = () => {
     }
   };
 
-  const handleRowClick = (row: StoreAdmin) => {
-    navigate(`/cold-storage/${row._id}`);
+  const handleRowClick = (storage: StoreAdmin) => {
+    navigate(`/cold-storages/${storage._id}`, {
+      state: { coldStorage: storage },
+    });
   };
 
   // Calculate summary metrics
