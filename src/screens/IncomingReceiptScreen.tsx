@@ -59,7 +59,6 @@ const IncomingReceiptScreen = () => {
   };
 
   useEffect(() => {
-    // In a real app, you might fetch additional farmer details here
     if (routerLocation.state?.incomingOrder) {
       setReceipt(routerLocation.state.incomingOrder);
       setLoading(false);
@@ -88,11 +87,12 @@ const IncomingReceiptScreen = () => {
             The receipt you're looking for doesn't exist or has been removed.
           </p>
           <Link
-            to={`/cold-storages/${receipt?.coldStorageId}`}
-            className="inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none"
+            to={`/cold-storages/${receipt.coldStorageId}`}
+            state={{ coldStorage: routerLocation.state?.coldStorage }} // Pass the coldStorage data
+            className="flex items-center text-indigo-600 hover:text-indigo-800 transition-colors"
           >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Cold Storage
+            <ArrowLeft className="h-5 w-5 mr-1" />
+            <span>Back to Cold Storage</span>
           </Link>
         </div>
       </div>
@@ -147,11 +147,12 @@ const IncomingReceiptScreen = () => {
         {/* Back Button and Title */}
         <div className="px-6 py-4 flex items-center">
           <Link
-            to={`/cold-storages/${receipt.coldStorageId}`}
-            className="flex items-center text-indigo-600 hover:text-indigo-800 transition-colors"
+            to={`/cold-storages/${receipt?.coldStorageId}`}
+            state={{ coldStorage: routerLocation.state?.coldStorage }}
+            className="inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none"
           >
-            <ArrowLeft className="h-5 w-5 mr-1" />
-            <span>Back to Cold Storage</span>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Cold Storage
           </Link>
         </div>
 

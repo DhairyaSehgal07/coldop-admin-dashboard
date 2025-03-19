@@ -9,15 +9,17 @@ import {
   IncomingOrder,
   IncomingOrdersResponse,
 } from "./columnDefinition";
+import { StoreAdmin } from "@/screens/ColdStorageScreen/columnDefinitions";
 
-const IncomingOrdersTab = ({ id }: { id: string }) => {
+const IncomingOrdersTab = ({ coldStorageData }: { coldStorageData: StoreAdmin}) => {
+
   const navigate = useNavigate();
   // Fetch incoming orders data
   const { data, isLoading, isError } = useQuery({
-    queryKey: ["incomingOrders", id],
+    queryKey: ["incomingOrders", coldStorageData._id],
     queryFn: async () => {
       const response = await axios.get<IncomingOrdersResponse>(
-        `${BASE_URL}/cold-storages/${id}/incoming-orders`,
+        `${BASE_URL}/cold-storages/${coldStorageData._id}/incoming-orders`,
         {
           withCredentials: true,
         }
@@ -52,7 +54,7 @@ const IncomingOrdersTab = ({ id }: { id: string }) => {
   const handleRowClick = (row: IncomingOrder) => {
     console.log(row);
     navigate(`/cold-storages/${row.coldStorageId}/incoming-orders/${row._id}`, {
-      state: { incomingOrder: row },
+      state: { incomingOrder: row, coldStorage:coldStorageData },
     });
   };
 
