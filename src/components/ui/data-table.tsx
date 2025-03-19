@@ -50,7 +50,7 @@ export function DataTable<TData, TValue>({
   data,
   showColumnFilters = true,
   showPagination = true,
-  pageSize = 10,
+  pageSize = 100, // Changed default to 100
   className = "",
   onRowClick,
   emptyMessage = "No results found.",
@@ -66,7 +66,7 @@ export function DataTable<TData, TValue>({
   const [globalFilter, setGlobalFilter] = React.useState<string>("");
   const [pagination, setPagination] = React.useState({
     pageIndex: 0,
-    pageSize: pageSize,
+    pageSize: 100, // Set initial state to 100
   });
 
   // Update pageSize if the prop changes
@@ -108,9 +108,7 @@ export function DataTable<TData, TValue>({
   }
 
   return (
-    <div
-      className={`bg-white border rounded-lg shadow-lg overflow-hidden ${className}`}
-    >
+    <div className={`bg-white border rounded-lg shadow-lg ${className}`}>
       {/* Header Controls */}
       <div className="px-6 py-4 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-3 sm:space-y-0">
         {title && (
@@ -167,97 +165,113 @@ export function DataTable<TData, TValue>({
         </div>
       </div>
 
-      {/* Table */}
-      <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <tr key={headerGroup.id} className="bg-gray-50">
-                {headerGroup.headers.map((header) => (
-                  <th
-                    key={header.id}
-                    scope="col"
-                    className="group px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider"
-                  >
-                    {header.isPlaceholder ? null : (
-                      <div className="flex flex-col space-y-2">
-                        <div
-                          className={`flex items-center justify-between ${
-                            header.column.getCanSort()
-                              ? "cursor-pointer select-none"
-                              : ""
-                          }`}
-                          onClick={header.column.getToggleSortingHandler()}
-                        >
-                          {flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                        </div>
-                        {header.column.getCanFilter() &&
-                          header.column.getIsVisible() && (
-                            <Input
-                              placeholder={`Filter ${header.column.id}`}
-                              value={
-                                (header.column.getFilterValue() as string) ?? ""
-                              }
-                              onChange={(event) =>
-                                header.column.setFilterValue(event.target.value)
-                              }
-                              className="w-full text-xs px-3 py-1.5 border rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                            />
-                          )}
-                      </div>
-                    )}
-                  </th>
-                ))}
-              </tr>
-            ))}
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row, index) => (
-                <tr
-                  key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
-                  className={`${
-                    index % 2 === 0 ? "bg-white" : "bg-gray-50"
-                  } hover:bg-indigo-50 transition-colors ${
-                    onRowClick ? "cursor-pointer" : ""
-                  }`}
-                  onClick={() => onRowClick && onRowClick(row.original)}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <td
-                      key={cell.id}
-                      className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-700"
+      {/* Table with sticky header */}
+      <div className="relative">
+        {/* Sticky header */}
+        <div className="sticky top-0 z-10 bg-gray-50 shadow-sm">
+          <table className="w-full table-fixed divide-y divide-gray-200">
+            <thead>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <tr key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => (
+                    <th
+                      key={header.id}
+                      scope="col"
+                      className="group px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-[33%]"
                     >
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
+                      {header.isPlaceholder ? null : (
+                        <div className="flex flex-col space-y-2">
+                          <div
+                            className={`flex items-center justify-between ${
+                              header.column.getCanSort()
+                                ? "cursor-pointer select-none"
+                                : ""
+                            }`}
+                            onClick={header.column.getToggleSortingHandler()}
+                          >
+                            {flexRender(
+                              header.column.columnDef.header,
+                              header.getContext()
+                            )}
+                          </div>
+                          {header.column.getCanFilter() &&
+                            header.column.getIsVisible() && (
+                              <Input
+                                placeholder={`Filter ${header.column.id}`}
+                                value={
+                                  (header.column.getFilterValue() as string) ??
+                                  ""
+                                }
+                                onChange={(event) =>
+                                  header.column.setFilterValue(
+                                    event.target.value
+                                  )
+                                }
+                                className="w-full text-xs px-3 py-1.5 border rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                              />
+                            )}
+                        </div>
                       )}
-                    </td>
+                    </th>
                   ))}
                 </tr>
-              ))
-            ) : (
-              <tr>
-                <td
-                  colSpan={columns.length}
-                  className="px-6 py-12 text-center text-gray-500 text-sm border-t border-gray-200"
-                >
-                  <div className="flex flex-col items-center justify-center">
-                    <p className="text-gray-500 text-lg mb-1">{emptyMessage}</p>
-                    <p className="text-gray-400 text-sm">
-                      Try adjusting your search or filter to find what you're
-                      looking for.
-                    </p>
-                  </div>
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+              ))}
+            </thead>
+          </table>
+        </div>
+
+        {/* Scrollable table body */}
+        <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 h-96 overflow-y-auto">
+          <table className="w-full table-fixed divide-y divide-gray-200">
+            <tbody className="bg-white divide-y divide-gray-200">
+              {table.getRowModel().rows?.length ? (
+                table.getRowModel().rows.map((row, index) => (
+                  <tr
+                    key={row.id}
+                    data-state={row.getIsSelected() && "selected"}
+                    className={`${
+                      index % 2 === 0 ? "bg-white" : "bg-gray-50"
+                    } hover:bg-indigo-50 transition-colors ${
+                      onRowClick ? "cursor-pointer" : ""
+                    }`}
+                    onClick={() => onRowClick && onRowClick(row.original)}
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <td
+                        key={cell.id}
+                        className="px-6 py-4 text-sm font-medium text-gray-700 truncate w-[33%]"
+                      >
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </td>
+                    ))}
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td
+                    colSpan={columns.length}
+                    className="px-6 py-12 text-center text-gray-500 text-sm border-t border-gray-200"
+                  >
+                    <div className="flex flex-col items-center justify-center">
+                      <p className="text-gray-500 text-lg mb-1">
+                        {emptyMessage}
+                      </p>
+                      <p className="text-gray-400 text-sm">
+                        Try adjusting your search or filter to find what you're
+                        looking for.
+                      </p>
+                    </div>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+          {/* Bottom padding div */}
+          <div className="h-16"></div>
+        </div>
       </div>
 
       {/* Pagination */}
@@ -369,17 +383,16 @@ export function DataTable<TData, TValue>({
               </nav>
             </div>
           </div>
-
-          {/* Mobile pagination */}
-          <div className="flex items-center justify-between w-full sm:hidden">
+          <div className="flex items-center space-x-2 sm:hidden">
             <Button
               variant="outline"
               size="sm"
               onClick={() => table.previousPage()}
               disabled={!table.getCanPreviousPage()}
-              className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="relative inline-flex items-center px-2 py-2 text-sm font-medium rounded-md"
             >
-              Previous
+              <ChevronLeft className="h-4 w-4" />
+              <span className="ml-1">Prev</span>
             </Button>
             <span className="text-sm text-gray-700">
               Page {table.getState().pagination.pageIndex + 1} of{" "}
@@ -390,9 +403,10 @@ export function DataTable<TData, TValue>({
               size="sm"
               onClick={() => table.nextPage()}
               disabled={!table.getCanNextPage()}
-              className="relative inline-flex items-center px-4 py-2 ml-3 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="relative inline-flex items-center px-2 py-2 text-sm font-medium rounded-md"
             >
-              Next
+              <span className="mr-1">Next</span>
+              <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
         </div>

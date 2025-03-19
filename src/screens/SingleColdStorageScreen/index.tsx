@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useLocation } from "react-router-dom";
@@ -18,10 +18,32 @@ const SingleColdStorageScreen = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { id } = useParams();
   const location = useLocation();
+  const navigate = useNavigate();
 
-  const [coldStorageData] = useState(location.state?.coldStorage);
+  // Store data with a default fallback object to prevent undefined errors
+  const [coldStorageData] = useState(location.state?.coldStorage || {
+    coldStorageDetails: { 
+      coldStorageName: "Loading...",
+      capacity: "N/A" 
+    },
+    location: "Unknown",
+    occupancy: 0,
+    _id: id
+  });
 
-  console.log(location.state.coldStorage);
+  // Add error handling - if we don't have essential data, redirect or show error
+  useEffect(() => {
+    if (!location.state?.coldStorage) {
+      // Option 1: Fetch data if not provided in state
+      // fetchColdStorageData(id);
+      
+      // Option 2: Redirect to cold storages list with error message
+      // navigate('/cold-storages', { state: { error: "Cold storage data not found" } });
+      
+      // For now we're using default values, but one of the above options would be better
+      console.warn("Cold storage data not available in route state");
+    }
+  }, [id, location.state, navigate]);
 
   const [activeTab, setActiveTab] = useState(() => {
     const savedTab = localStorage.getItem(`coldStorage_${id}_activeTab`);
@@ -32,8 +54,8 @@ const SingleColdStorageScreen = () => {
     localStorage.setItem(`coldStorage_${id}_activeTab`, activeTab);
   }, [activeTab, id]);
 
-  const handleOutsideClick = (e: MouseEvent) => {
-    if (isSidebarOpen && !(e.target as HTMLElement).closest("aside")) {
+  const handleOutsideClick = (e) => {
+    if (isSidebarOpen && !(e.target).closest("aside")) {
       setIsSidebarOpen(false);
     }
   };
@@ -41,13 +63,13 @@ const SingleColdStorageScreen = () => {
   return (
     <div
       className="flex h-screen bg-gray-100"
-      onClick={() => handleOutsideClick}
+      onClick={handleOutsideClick} // Fixed: this was incorrectly passing a function reference
     >
       {/* Sidebar Component */}
       <Sidebar isSidebarOpen={isSidebarOpen} />
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-y-auto">
         {/* TopBar Component */}
         <TopBar
           isSidebarOpen={isSidebarOpen}
@@ -135,7 +157,7 @@ const SingleColdStorageScreen = () => {
             </TabsContent>
 
             <TabsContent value="incoming">
-              <IncomingOrdersTab />
+              <IncomingOrdersTab id={coldStorageData._id} />
             </TabsContent>
 
             <TabsContent value="outgoing">
