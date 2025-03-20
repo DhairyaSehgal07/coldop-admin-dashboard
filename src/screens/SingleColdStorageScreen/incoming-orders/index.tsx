@@ -15,23 +15,25 @@ const IncomingOrdersTab = ({ coldStorageData }: { coldStorageData: StoreAdmin}) 
 
   const navigate = useNavigate();
   // Fetch incoming orders data
-  const { data, isLoading, isError } = useQuery({
-    queryKey: ["incomingOrders", coldStorageData._id],
-    queryFn: async () => {
-      const response = await axios.get<IncomingOrdersResponse>(
-        `${BASE_URL}/cold-storages/${coldStorageData._id}/incoming-orders`,
-        {
-          withCredentials: true,
-        }
-      );
-
-      if (response.status !== 200) {
-        throw new Error("Failed to fetch incoming orders");
+const { data, isLoading, isError } = useQuery({
+  queryKey: ["incomingOrders", coldStorageData._id],
+  queryFn: async () => {
+    const response = await axios.get<IncomingOrdersResponse>(
+      `${BASE_URL}/cold-storages/${coldStorageData._id}/incoming-orders`,
+      {
+        withCredentials: true,
       }
+    );
 
-      return response.data;
-    },
-  });
+    if (response.status !== 200) {
+      throw new Error("Failed to fetch incoming orders");
+    }
+
+    return response.data;
+  },
+  refetchInterval: 3000, // Refetch every 3 seconds
+});
+
 
   // Show loading state
   if (isLoading) {

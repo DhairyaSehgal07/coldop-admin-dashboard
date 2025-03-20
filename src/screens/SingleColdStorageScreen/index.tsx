@@ -32,8 +32,8 @@ const SingleColdStorageScreen = () => {
     localStorage.setItem(`coldStorage_${id}_activeTab`, activeTab);
   }, [activeTab, id]);
 
-  const handleOutsideClick = (e) => {
-    if (isSidebarOpen && !e.target.closest("aside")) {
+  const handleOutsideClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (isSidebarOpen && !(e.target as HTMLElement).closest("aside")) {
       setIsSidebarOpen(false);
     }
   };
