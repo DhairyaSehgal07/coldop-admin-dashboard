@@ -1,13 +1,27 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState, FormEvent, ChangeEvent } from "react";
+import { useState, FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useMutation } from "@tanstack/react-query";
 import toast from "react-hot-toast";
-import Loader from "../components/common/Loader";
-import { setCredentials } from "../slices/authSlice";
 import { useDispatch } from "react-redux";
+import { setCredentials } from "../slices/authSlice";
 import { BASE_URL } from "../utils/const";
+
+// Import Shadcn UI components
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+
+// Import Lucide icons
+import { Loader2, Mail, Lock } from "lucide-react";
 
 interface LoginCredentials {
   email: string;
@@ -24,6 +38,7 @@ interface LoginResponse {
     updatedAt: string;
     __v: number;
   };
+  token: string;
 }
 
 const loginUser = async (
@@ -53,10 +68,13 @@ const LoginScreen = () => {
       toast.success("Login successful!");
 
       // Handle successful login
-      dispatch(setCredentials(data.superAdmin));
+      dispatch(setCredentials({
+        user: data.superAdmin,
+        token: data.token
+      }));
       navigate("/");
     },
-    onError: (error: any) => {
+    onError: (error: { response?: { data?: { message?: string } } }) => {
       // Show error toast with the error message
       const errorMessage =
         error.response?.data?.message || "An error occurred. Please try again.";
@@ -66,9 +84,7 @@ const LoginScreen = () => {
     },
   });
 
-  const handleChange = (
-    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prevState) => ({
       ...prevState,
@@ -85,59 +101,77 @@ const LoginScreen = () => {
     });
   };
 
+  if (mutation.isPending) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
-    <div className="flex justify-center px-4 items-center min-h-screen">
-      {mutation.isPending ? (
-        <Loader />
-      ) : (
-        <form
-          onSubmit={handleSubmit}
-          className=" p-6 rounded-lg border border-gray-200 shadow-xl w-full max-w-md"
-        >
-          <h1 className="text-3xl font-bold mb-6 text-center">Login</h1>
-
-          {/* Email Field */}
-          <div className="mb-4">
-            <label htmlFor="email" className="block text-gray-700 mb-2">
-              Email
-            </label>
-            <input
-              type="email"
-              name="email"
-              id="email"
-              value={formData.email}
-              onChange={handleChange}
-              className="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
-              required
-            />
-          </div>
-
-          {/* Password Field */}
-          <div className="mb-4">
-            <label htmlFor="password" className="block text-gray-700 mb-2">
-              Password
-            </label>
-            <input
-              type="password"
-              name="password"
-              id="password"
-              value={formData.password}
-              onChange={handleChange}
-              className="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
-              required
-            />
-          </div>
-
-          {/* Submit Button */}
-          <button
-            type="submit"
-            className="w-full cursor-pointer bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600 transition duration-200"
-            disabled={mutation.isPending}
-          >
-            {mutation.isPending ? "Logging in..." : "Login"}
-          </button>
+    <div className="flex justify-center items-center min-h-screen px-4">
+      <Card className="w-full max-w-md">
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl font-bold text-center">
+            Login
+          </CardTitle>
+          <CardDescription className="text-center">
+            Enter your credentials to access your account
+          </CardDescription>
+        </CardHeader>
+        <form onSubmit={handleSubmit}>
+          <CardContent className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="email" className="flex items-center gap-2">
+                <Mail className="h-4 w-4" /> Email
+              </Label>
+              <div className="relative">
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  placeholder="your@email.com"
+                  value={formData.email}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password" className="flex items-center gap-2">
+                  <Lock className="h-4 w-4" /> Password
+                </Label>
+                <a href="#" className="text-sm text-primary hover:underline">
+                  Forgot password?
+                </a>
+              </div>
+              <Input
+                id="password"
+                name="password"
+                type="password"
+                placeholder="••••••••"
+                value={formData.password}
+                onChange={handleChange}
+                required
+              />
+            </div>
+          </CardContent>
+          <CardFooter className="pt-6">
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={mutation.isPending}
+            >
+              {mutation.isPending && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              {mutation.isPending ? "Logging in..." : "Login"}
+            </Button>
+          </CardFooter>
         </form>
-      )}
+      </Card>
     </div>
   );
 };

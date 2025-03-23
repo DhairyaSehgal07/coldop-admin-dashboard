@@ -4,5 +4,6 @@ export interface Admin {
   password: string;
   createdAt: string;
   updatedAt: string;
+  token: string;
   __v: number;
 }
