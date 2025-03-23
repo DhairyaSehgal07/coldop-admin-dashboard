@@ -1,32 +1,44 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 
-// Type definitions for the incoming orders data
-export interface BagSize {
-  quantity: {
-    initialQuantity: number;
-    currentQuantity: number;
-  };
+// Type definitions for the outgoing orders data
+export interface IncomingBagSize {
   size: string;
-}
-
-export interface OrderDetail {
-  variety: string;
-  bagSizes: BagSize[];
-  location: string;
-}
-
-export interface IncomingOrder {
+  currentQuantity: number;
+  initialQuantity: number;
   _id: string;
+}
+
+export interface IncomingOrderReference {
+  _id: string;
+  location: string;
   voucher: {
     type: string;
     voucherNumber: number;
   };
+  incomingBagSizes: IncomingBagSize[];
+}
+
+export interface BagSize {
+  size: string;
+  quantityRemoved: number;
+}
+
+export interface OrderDetail {
+  variety: string;
+  incomingOrder: IncomingOrderReference;
+  bagSizes: BagSize[];
+}
+
+export interface OutgoingOrder {
+  _id: string;
   coldStorageId: string;
   farmerId: string;
-  dateOfSubmission: string;
-  currentStockAtThatTime?: number;
-  fulfilled: boolean;
+  voucher: {
+    type: string;
+    voucherNumber: number;
+  };
+  dateOfExtraction: string;
   remarks: string;
   orderDetails: OrderDetail[];
   createdAt: string;
@@ -34,24 +46,24 @@ export interface IncomingOrder {
   __v: number;
 }
 
-export interface IncomingOrdersResponse {
-  status: string;
+export interface OutgoingOrdersResponse {
+  status?: string;
   message: string;
-  data: IncomingOrder[];
+  data: OutgoingOrder[];
 }
 
-// Helper function to calculate total bags
-const calculateTotalBags = (orderDetails: OrderDetail[]): number => {
+// Helper function to calculate total bags extracted
+const calculateTotalBagsExtracted = (orderDetails: OrderDetail[]): number => {
   return orderDetails.reduce((total, detail) => {
     const detailTotal = detail.bagSizes.reduce((sum, bag) => {
-      return sum + bag.quantity.initialQuantity;
+      return sum + bag.quantityRemoved;
     }, 0);
     return total + detailTotal;
   }, 0);
 };
 
 // Column definitions
-export const columns: ColumnDef<IncomingOrder>[] = [
+export const columns: ColumnDef<OutgoingOrder>[] = [
   {
     accessorKey: "voucher.voucherNumber",
     header: "Voucher Number",
@@ -67,9 +79,9 @@ export const columns: ColumnDef<IncomingOrder>[] = [
     },
   },
   {
-    accessorKey: "dateOfSubmission",
-    header: "Submission Date",
-    cell: ({ row }) => <div>{row.original.dateOfSubmission}</div>,
+    accessorKey: "dateOfExtraction",
+    header: "Extraction Date",
+    cell: ({ row }) => <div>{row.original.dateOfExtraction}</div>,
   },
   {
     accessorKey: "orderDetails",
@@ -94,22 +106,22 @@ export const columns: ColumnDef<IncomingOrder>[] = [
     },
   },
   {
-    id: "totalBags",
-    header: "Total Bags",
+    id: "totalBagsExtracted",
+    header: "Total Bags Extracted",
     cell: ({ row }) => {
-      const totalBags = calculateTotalBags(row.original.orderDetails);
+      const totalBags = calculateTotalBagsExtracted(row.original.orderDetails);
       return <div className="font-medium">{totalBags}</div>;
     },
   },
   {
-    id: "bagSizes",
+    id: "bagDetails",
     header: "Bag Details",
     cell: ({ row }) => (
       <div className="space-y-1">
-        {row.original.orderDetails.map((detail) =>
+        {row.original.orderDetails.map((detail, detailIndex) =>
           detail.bagSizes.map((bag, idx) => (
-            <Badge key={idx} variant="outline" className="mr-1">
-              {bag.size}: {bag.quantity.currentQuantity}
+            <Badge key={`${detailIndex}-${idx}`} variant="outline" className="mr-1">
+              {bag.size}: {bag.quantityRemoved}
             </Badge>
           ))
         )}
@@ -117,13 +129,13 @@ export const columns: ColumnDef<IncomingOrder>[] = [
     ),
   },
   {
-    accessorKey: "location",
+    id: "location",
     header: "Location",
     cell: ({ row }) => (
       <div className="text-sm text-muted-foreground">
         {row.original.orderDetails.map((detail, index) => (
           <span key={index}>
-            {detail.location}
+            {detail.incomingOrder.location}
             {index < row.original.orderDetails.length - 1 ? ", " : ""}
           </span>
         ))}
@@ -131,27 +143,11 @@ export const columns: ColumnDef<IncomingOrder>[] = [
     ),
     filterFn: (row, columnId, filterValue) => {
       const locations = row.original.orderDetails.map((detail) =>
-        detail.location.toLowerCase()
+        detail.incomingOrder.location.toLowerCase()
       );
       return locations.some((location) =>
         location.includes(String(filterValue).toLowerCase())
       );
-    },
-  },
-  {
-    accessorKey: "fulfilled",
-    header: "Status",
-    cell: ({ row }) => (
-      <Badge
-        variant="secondary"
-        className={row.original.fulfilled ? "bg-green-100 text-green-800" : ""}
-      >
-        {row.original.fulfilled ? "Fulfilled" : "Pending"}
-      </Badge>
-    ),
-    filterFn: (row, columnId, filterValue) => {
-      const status = row.original.fulfilled ? "fulfilled" : "pending";
-      return status.includes(String(filterValue).toLowerCase());
     },
   },
   {

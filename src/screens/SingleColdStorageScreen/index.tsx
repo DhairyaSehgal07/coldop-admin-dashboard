@@ -59,10 +59,10 @@ const SingleColdStorageScreen = () => {
         <div className="px-6 py-4 flex items-center">
           <Link
             to="/cold-storages"
-            className="flex items-center text-indigo-600 hover:text-indigo-800 transition-colors"
+            className="inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none"
           >
-            <ArrowLeft className="h-5 w-5 mr-1" />
-            <span>Back to Cold Storages</span>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Cold Storages
           </Link>
         </div>
 
@@ -188,101 +188,103 @@ const SingleColdStorageScreen = () => {
               onValueChange={setActiveTab}
               className="w-full"
             >
-              <TabsList className="flex w-full bg-white p-0 border-b border-gray-200 rounded-none">
-                <TabsTrigger
-                  value="overview"
-                  className="flex-1 px-6 py-4 text-sm font-medium transition-all relative
-                  data-[state=active]:bg-white data-[state=active]:text-indigo-700 data-[state=active]:font-semibold
-                  data-[state=inactive]:text-gray-600 data-[state=inactive]:hover:text-indigo-600 data-[state=inactive]:hover:bg-gray-50"
-                >
-                  <span className="flex items-center justify-center">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-4 w-4 mr-2"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                    >
-                      <path d="M2 10a8 8 0 018-8v8h8a8 8 0 11-16 0z" />
-                      <path d="M12 2.252A8.014 8.014 0 0117.748 8H12V2.252z" />
-                    </svg>
-                    Overview
-                  </span>
-                  {activeTab === "overview" && (
-                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600"></div>
-                  )}
-                </TabsTrigger>
-                <TabsTrigger
-                  value="farmers"
-                  className="flex-1 px-6 py-4 text-sm font-medium transition-all relative
-                  data-[state=active]:bg-white data-[state=active]:text-indigo-700 data-[state=active]:font-semibold
-                  data-[state=inactive]:text-gray-600 data-[state=inactive]:hover:text-indigo-600 data-[state=inactive]:hover:bg-gray-50"
-                >
-                  <span className="flex items-center justify-center">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-4 w-4 mr-2"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                    >
-                      <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
-                    </svg>
-                    Farmers
-                  </span>
-                  {activeTab === "farmers" && (
-                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600"></div>
-                  )}
-                </TabsTrigger>
-                <TabsTrigger
-                  value="incoming"
-                  className="flex-1 px-6 py-4 text-sm font-medium transition-all relative
-                  data-[state=active]:bg-white data-[state=active]:text-indigo-700 data-[state=active]:font-semibold
-                  data-[state=inactive]:text-gray-600 data-[state=inactive]:hover:text-indigo-600 data-[state=inactive]:hover:bg-gray-50"
-                >
-                  <span className="flex items-center justify-center">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-4 w-4 mr-2"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    Incoming Orders
-                  </span>
-                  {activeTab === "incoming" && (
-                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600"></div>
-                  )}
-                </TabsTrigger>
-                <TabsTrigger
-                  value="outgoing"
-                  className="flex-1 px-6 py-4 text-sm font-medium transition-all relative
-                  data-[state=active]:bg-white data-[state=active]:text-indigo-700 data-[state=active]:font-semibold
-                  data-[state=inactive]:text-gray-600 data-[state=inactive]:hover:text-indigo-600 data-[state=inactive]:hover:bg-gray-50"
-                >
-                  <span className="flex items-center justify-center">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-4 w-4 mr-2"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    Outgoing Orders
-                  </span>
-                  {activeTab === "outgoing" && (
-                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600"></div>
-                  )}
-                </TabsTrigger>
-              </TabsList>
+              <div className="overflow-x-auto">
+                <TabsList className="flex w-max min-w-full bg-white p-0 border-b border-gray-200 rounded-none">
+                  <TabsTrigger
+                    value="overview"
+                    className="flex-1 px-6 py-4 text-sm font-medium transition-all relative whitespace-nowrap
+                    data-[state=active]:bg-white data-[state=active]:text-indigo-700 data-[state=active]:font-semibold
+                    data-[state=inactive]:text-gray-600 data-[state=inactive]:hover:text-indigo-600 data-[state=inactive]:hover:bg-gray-50"
+                  >
+                    <span className="flex items-center justify-center">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-4 w-4 mr-2"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path d="M2 10a8 8 0 018-8v8h8a8 8 0 11-16 0z" />
+                        <path d="M12 2.252A8.014 8.014 0 0117.748 8H12V2.252z" />
+                      </svg>
+                      Overview
+                    </span>
+                    {activeTab === "overview" && (
+                      <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600"></div>
+                    )}
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="farmers"
+                    className="flex-1 px-6 py-4 text-sm font-medium transition-all relative whitespace-nowrap
+                    data-[state=active]:bg-white data-[state=active]:text-indigo-700 data-[state=active]:font-semibold
+                    data-[state=inactive]:text-gray-600 data-[state=inactive]:hover:text-indigo-600 data-[state=inactive]:hover:bg-gray-50"
+                  >
+                    <span className="flex items-center justify-center">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-4 w-4 mr-2"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
+                      </svg>
+                      Farmers
+                    </span>
+                    {activeTab === "farmers" && (
+                      <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600"></div>
+                    )}
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="incoming"
+                    className="flex-1 px-6 py-4 text-sm font-medium transition-all relative whitespace-nowrap
+                    data-[state=active]:bg-white data-[state=active]:text-indigo-700 data-[state=active]:font-semibold
+                    data-[state=inactive]:text-gray-600 data-[state=inactive]:hover:text-indigo-600 data-[state=inactive]:hover:bg-gray-50"
+                  >
+                    <span className="flex items-center justify-center">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-4 w-4 mr-2"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      Incoming Orders
+                    </span>
+                    {activeTab === "incoming" && (
+                      <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600"></div>
+                    )}
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="outgoing"
+                    className="flex-1 px-6 py-4 text-sm font-medium transition-all relative whitespace-nowrap
+                    data-[state=active]:bg-white data-[state=active]:text-indigo-700 data-[state=active]:font-semibold
+                    data-[state=inactive]:text-gray-600 data-[state=inactive]:hover:text-indigo-600 data-[state=inactive]:hover:bg-gray-50"
+                  >
+                    <span className="flex items-center justify-center">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-4 w-4 mr-2"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      Outgoing Orders
+                    </span>
+                    {activeTab === "outgoing" && (
+                      <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600"></div>
+                    )}
+                  </TabsTrigger>
+                </TabsList>
+              </div>
 
               {/* Tab Contents with improved styling */}
               <div className="bg-white p-4">
@@ -293,7 +295,7 @@ const SingleColdStorageScreen = () => {
                 </TabsContent>
 
                 <TabsContent value="farmers" className="mt-0">
-                  <FarmersTab />
+                  <FarmersTab coldStorageData={coldStorageData} />
                 </TabsContent>
 
                 <TabsContent value="incoming" className="mt-0">
@@ -301,7 +303,7 @@ const SingleColdStorageScreen = () => {
                 </TabsContent>
 
                 <TabsContent value="outgoing" className="mt-0">
-                  <OutgoingOrdersTab />
+                  <OutgoingOrdersTab coldStorageData={coldStorageData} />
                 </TabsContent>
               </div>
             </Tabs>

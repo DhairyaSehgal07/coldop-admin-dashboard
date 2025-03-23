@@ -7,8 +7,6 @@ import {
   User,
   Truck,
   Warehouse,
-  CheckCircle,
-  ClipboardList,
   Edit,
   X,
   Loader2,
@@ -25,31 +23,41 @@ import axios from "axios";
 
 // Define types based on your data structure
 interface BagSize {
-  quantity: {
-    initialQuantity: number;
-    currentQuantity: number;
-  };
   size: string;
+  quantityRemoved: number;
+}
+
+interface IncomingBagSize {
+  size: string;
+  currentQuantity: number;
+  initialQuantity: number;
+  _id: string;
 }
 
 interface OrderDetail {
   variety: string;
+  incomingOrder: {
+    _id: string;
+    location: string;
+    voucher: {
+      type: string;
+      voucherNumber: number;
+    };
+    incomingBagSizes: IncomingBagSize[];
+  };
   bagSizes: BagSize[];
-  location: string;
 }
 
-interface IncomingOrder {
+interface OutgoingOrder {
   _id: string;
   coldStorageId: string;
   farmerId: string;
-  dateOfSubmission: string;
-  fulfilled: boolean;
+  dateOfExtraction: string;
   remarks: string;
   orderDetails: OrderDetail[];
-  currentStockAtThatTime?: number;
-  createdAt: string;
-  updatedAt: string;
-  __v: number;
+  createdAt?: string;
+  updatedAt?: string;
+  __v?: number;
   voucher: {
     type: string;
     voucherNumber: number;
@@ -72,13 +80,13 @@ interface FarmerResponse {
   data: Farmer;
 }
 
-const IncomingReceiptScreen = () => {
+const OutgoingReceiptScreen = () => {
   const routerLocation = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [receipt, setReceipt] = useState<IncomingOrder>();
+  const [receipt, setReceipt] = useState<OutgoingOrder>();
   const [loading, setLoading] = useState(true);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editedReceipt, setEditedReceipt] = useState<IncomingOrder | null>(null);
+  const [editedReceipt, setEditedReceipt] = useState<OutgoingOrder | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -120,9 +128,9 @@ const IncomingReceiptScreen = () => {
   };
 
   useEffect(() => {
-    if (routerLocation.state?.incomingOrder) {
-      setReceipt(routerLocation.state.incomingOrder);
-      setEditedReceipt(JSON.parse(JSON.stringify(routerLocation.state.incomingOrder)));
+    if (routerLocation.state?.outgoingOrder) {
+      setReceipt(routerLocation.state.outgoingOrder);
+      setEditedReceipt(JSON.parse(JSON.stringify(routerLocation.state.outgoingOrder)));
       setLoading(false);
     }
   }, [routerLocation.state]);
@@ -145,34 +153,29 @@ const IncomingReceiptScreen = () => {
     
     try {
       // Prepare the data object based on the required format
-      // Ensuring only one variety entry in orderDetails
-      const firstOrderDetail = editedReceipt.orderDetails[0];
-      
       const updateData = {
         remarks: editedReceipt.remarks,
-        fulfilled: editedReceipt.fulfilled,
-        dateOfSubmission: editedReceipt.dateOfSubmission,
-        orderDetails: [{
-          variety: firstOrderDetail.variety,
-          location: firstOrderDetail.location,
-          bagSizes: firstOrderDetail.bagSizes.map(bag => ({
+        dateOfExtraction: editedReceipt.dateOfExtraction,
+        orderDetails: editedReceipt.orderDetails.map(detail => ({
+          variety: detail.variety,
+          incomingOrder: {
+            _id: detail.incomingOrder._id,
+          },
+          bagSizes: detail.bagSizes.map(bag => ({
             size: bag.size,
-            quantity: {
-              initialQuantity: bag.quantity.initialQuantity,
-              currentQuantity: bag.quantity.currentQuantity
-            }
+            quantityRemoved: bag.quantityRemoved
           }))
-        }]
+        }))
       };
       
       // Send the update request to the backend
-      const response = await fetch(`${BASE_URL}/incoming-orders/${editedReceipt._id}`, {
+      const response = await fetch(`${BASE_URL}/outgoing-orders/${editedReceipt._id}`, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(updateData),
+        body: JSON.stringify(updateData)
       });
       
       const data = await response.json();
@@ -207,40 +210,20 @@ const IncomingReceiptScreen = () => {
     }
   };
 
-  const handleFulfilledChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (editedReceipt) {
-      setEditedReceipt({
-        ...editedReceipt,
-        fulfilled: e.target.checked,
-      });
-    }
-  };
-
   const handleBagSizeChange = (
     e: React.ChangeEvent<HTMLInputElement>,
     orderIndex: number,
     bagIndex: number,
-    field: string,
-    subField?: string
+    field: 'quantityRemoved'
   ) => {
     if (editedReceipt) {
       const updatedOrderDetails = [...editedReceipt.orderDetails];
       const updatedBagSizes = [...updatedOrderDetails[orderIndex].bagSizes];
       
-      if (subField) {
-        updatedBagSizes[bagIndex] = {
-          ...updatedBagSizes[bagIndex],
-          quantity: {
-            ...updatedBagSizes[bagIndex].quantity,
-            [subField]: parseInt(e.target.value) || 0,
-          },
-        };
-      } else {
-        updatedBagSizes[bagIndex] = {
-          ...updatedBagSizes[bagIndex],
-          [field]: e.target.value,
-        };
-      }
+      updatedBagSizes[bagIndex] = {
+        ...updatedBagSizes[bagIndex],
+        [field]: parseInt(e.target.value) || 0,
+      };
       
       updatedOrderDetails[orderIndex] = {
         ...updatedOrderDetails[orderIndex],
@@ -272,7 +255,7 @@ const IncomingReceiptScreen = () => {
     
     setDeleting(true);
     try {
-      const response = await fetch(`${BASE_URL}/orders/${receipt._id}`, {
+      const response = await fetch(`${BASE_URL}/outgoing-orders/${receipt._id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -320,7 +303,7 @@ const IncomingReceiptScreen = () => {
             The receipt you're looking for doesn't exist or has been removed.
           </p>
           <Link
-            to={`/cold-storages/${receipt!.coldStorageId}`}
+            to={`/cold-storages/${routerLocation.state?.coldStorageId || ''}`}
             state={{ coldStorage: routerLocation.state?.coldStorage }}
             className="flex items-center text-indigo-600 hover:text-indigo-800 transition-colors"
           >
@@ -361,7 +344,18 @@ const IncomingReceiptScreen = () => {
   // Extract the main variety from the first order detail
   const mainVariety = receipt.orderDetails[0]?.variety || "Unknown";
   // Use first location from order details
-  const location = receipt.orderDetails[0]?.location || "Not specified";
+  const location = receipt.orderDetails[0]?.incomingOrder?.location || "Not specified";
+
+  // Calculate total quantities removed
+  const totalQuantityRemoved = receipt.orderDetails.reduce(
+    (total, orderDetail) =>
+      total +
+      orderDetail.bagSizes.reduce(
+        (subtotal, bag) => subtotal + bag.quantityRemoved,
+        0
+      ),
+    0
+  );
 
   return (
     <div className="flex h-screen bg-gray-100" onClick={handleOutsideClick}>
@@ -374,7 +368,7 @@ const IncomingReceiptScreen = () => {
         <TopBar
           isSidebarOpen={isSidebarOpen}
           setIsSidebarOpen={setIsSidebarOpen}
-          title="Incoming Receipt Details"
+          title="Outgoing Receipt Details"
         />
 
         {/* Scrollable Content Area - includes buttons and receipt details */}
@@ -384,7 +378,7 @@ const IncomingReceiptScreen = () => {
             {/* Back button on top */}
             <div>
               <Link
-                to={`/cold-storages/${receipt!.coldStorageId}`}
+                to={`/cold-storages/${receipt.coldStorageId}`}
                 state={{ coldStorage: routerLocation.state?.coldStorage }}
                 className="inline-flex items-center justify-center rounded-md bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700 transition-colors duration-200 shadow-sm"
               >
@@ -415,40 +409,25 @@ const IncomingReceiptScreen = () => {
 
           <div className="bg-white rounded-lg shadow overflow-hidden">
             {/* Receipt Header */}
-            <div className="p-6 border-b border-gray-200 bg-indigo-50">
+            <div className="p-6 border-b border-gray-200 bg-amber-50">
               <div className="flex flex-col md:flex-row md:items-center md:justify-between">
                 <div>
                   <h2 className="text-2xl font-bold text-gray-800">
-                    Receipt #{receipt.voucher.voucherNumber}
+                    Delivery #{receipt.voucher.voucherNumber}
                   </h2>
                   <div className="flex items-center mt-1 text-gray-600">
                     <Calendar className="h-4 w-4 mr-1" />
-                    <span>{formatDate(receipt.dateOfSubmission)}</span>
+                    <span>{formatDate(receipt.dateOfExtraction)}</span>
                   </div>
                   <div className="flex items-center mt-1 text-gray-600">
                     <Warehouse className="h-4 w-4 mr-1" />
-                    <span>Stock Level: {receipt.currentStockAtThatTime !== undefined ? receipt.currentStockAtThatTime : "N/A"}</span>
+                    <span>Total Removed: {totalQuantityRemoved} bags</span>
                   </div>
                 </div>
                 <div className="mt-4 md:mt-0">
-                  <span
-                    className={`px-3 py-1 inline-flex items-center rounded-full text-sm font-medium ${
-                      receipt.fulfilled
-                        ? "bg-green-100 text-green-800"
-                        : "bg-yellow-100 text-yellow-800"
-                    }`}
-                  >
-                    {receipt.fulfilled ? (
-                      <>
-                        <CheckCircle className="h-4 w-4 mr-1" />
-                        Fulfilled
-                      </>
-                    ) : (
-                      <>
-                        <ClipboardList className="h-4 w-4 mr-1" />
-                        Pending
-                      </>
-                    )}
+                  <span className="px-3 py-1 inline-flex items-center rounded-full text-sm font-medium bg-amber-100 text-amber-800">
+                    <Truck className="h-4 w-4 mr-1" />
+                    Outgoing Delivery
                   </span>
                 </div>
               </div>
@@ -460,7 +439,7 @@ const IncomingReceiptScreen = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <div className="bg-gray-50 p-4 rounded-lg">
                   <h3 className="text-lg font-semibold mb-3 text-gray-800 flex items-center">
-                    <User className="h-5 w-5 mr-2 text-indigo-600" />
+                    <User className="h-5 w-5 mr-2 text-amber-600" />
                     Farmer Information
                   </h3>
                   <div className="space-y-2">
@@ -485,7 +464,7 @@ const IncomingReceiptScreen = () => {
 
                 <div className="bg-gray-50 p-4 rounded-lg">
                   <h3 className="text-lg font-semibold mb-3 text-gray-800 flex items-center">
-                    <Truck className="h-5 w-5 mr-2 text-indigo-600" />
+                    <Truck className="h-5 w-5 mr-2 text-amber-600" />
                     Order Details
                   </h3>
                   <div className="space-y-2">
@@ -494,12 +473,8 @@ const IncomingReceiptScreen = () => {
                       <p className="font-medium">{mainVariety}</p>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-500">Grade</p>
-                      <p className="font-medium">Standard</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500">Current Stock At Time</p>
-                      <p className="font-medium">{receipt.currentStockAtThatTime !== undefined ? receipt.currentStockAtThatTime : "N/A"}</p>
+                      <p className="text-sm text-gray-500">Linked Receipt</p>
+                      <p className="font-medium">Receipt #{receipt.orderDetails[0]?.incomingOrder?.voucher?.voucherNumber || "N/A"}</p>
                     </div>
                     <div className="flex items-start">
                       <MapPin className="h-4 w-4 text-gray-400 mt-0.5 mr-1" />
@@ -518,8 +493,8 @@ const IncomingReceiptScreen = () => {
               <div className="bg-white rounded-lg border border-gray-200 overflow-hidden mb-6">
                 <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
                   <h3 className="text-lg font-semibold flex items-center text-gray-800">
-                    <Warehouse className="h-5 w-5 mr-2 text-indigo-600" />
-                    Inventory Details
+                    <Truck className="h-5 w-5 mr-2 text-amber-600" />
+                    Inventory Removed
                   </h3>
                 </div>
                 <div className="overflow-x-auto">
@@ -536,86 +511,52 @@ const IncomingReceiptScreen = () => {
                           scope="col"
                           className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                         >
-                          Initial Quantity
+                          Available Quantity
                         </th>
                         <th
                           scope="col"
                           className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                         >
-                          Current Quantity
-                        </th>
-                        <th
-                          scope="col"
-                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                        >
-                          Removed
+                          Removed Quantity
                         </th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {receipt.orderDetails.flatMap((orderDetail, orderIndex) =>
-                        orderDetail.bagSizes.map((bag, bagIndex) => (
+                      {receipt.orderDetails[0]?.bagSizes.map((bag, bagIndex) => {
+                        // Find the corresponding incoming bag
+                        const incomingBag = receipt.orderDetails[0]?.incomingOrder?.incomingBagSizes.find(
+                          inBag => inBag.size === bag.size
+                        );
+                        
+                        return (
                           <tr
-                            key={`${orderIndex}-${bagIndex}`}
+                            key={bagIndex}
                             className="hover:bg-gray-50"
                           >
                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                               {bag.size}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                              {bag.quantity.initialQuantity}
+                              {incomingBag?.currentQuantity || "N/A"}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                              {bag.quantity.currentQuantity}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                              {bag.quantity.initialQuantity -
-                                bag.quantity.currentQuantity}
+                              {bag.quantityRemoved}
                             </td>
                           </tr>
-                        ))
-                      )}
+                        );
+                      })}
                       <tr className="bg-gray-50">
                         <td className="px-6 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
                           Total
                         </td>
                         <td className="px-6 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {receipt.orderDetails.reduce(
-                            (total, orderDetail) =>
-                              total +
-                              orderDetail.bagSizes.reduce(
-                                (subtotal, bag) =>
-                                  subtotal + bag.quantity.initialQuantity,
-                                0
-                              ),
+                          {receipt.orderDetails[0]?.incomingOrder?.incomingBagSizes.reduce(
+                            (total, bag) => total + bag.currentQuantity,
                             0
-                          )}
+                          ) || "N/A"}
                         </td>
                         <td className="px-6 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {receipt.orderDetails.reduce(
-                            (total, orderDetail) =>
-                              total +
-                              orderDetail.bagSizes.reduce(
-                                (subtotal, bag) =>
-                                  subtotal + bag.quantity.currentQuantity,
-                                0
-                              ),
-                            0
-                          )}
-                        </td>
-                        <td className="px-6 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {receipt.orderDetails.reduce(
-                            (total, orderDetail) =>
-                              total +
-                              orderDetail.bagSizes.reduce(
-                                (subtotal, bag) =>
-                                  subtotal +
-                                  (bag.quantity.initialQuantity -
-                                    bag.quantity.currentQuantity),
-                                0
-                              ),
-                            0
-                          )}
+                          {totalQuantityRemoved}
                         </td>
                       </tr>
                     </tbody>
@@ -639,11 +580,6 @@ const IncomingReceiptScreen = () => {
                 >
                   Print Receipt
                 </button>
-                {!receipt.fulfilled && (
-                  <button className="inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none">
-                    Mark as Fulfilled
-                  </button>
-                )}
               </div>
             </div>
           </div>
@@ -654,9 +590,9 @@ const IncomingReceiptScreen = () => {
       {isEditModalOpen && editedReceipt && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-screen overflow-hidden">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-indigo-50">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-amber-50">
               <h2 className="text-xl font-bold text-gray-800">
-                Edit Receipt #{editedReceipt.voucher.voucherNumber}
+                Edit Delivery #{editedReceipt.voucher.voucherNumber}
               </h2>
               <button
                 onClick={handleCloseEditModal}
@@ -698,29 +634,16 @@ const IncomingReceiptScreen = () => {
                     <h3 className="text-lg font-semibold text-gray-800">Order Information</h3>
                     
                     <div>
-                      <label htmlFor="dateOfSubmission" className="block text-sm font-medium text-gray-700 mb-1">
-                        Date of Submission (DD.MM.YY)
+                      <label htmlFor="dateOfExtraction" className="block text-sm font-medium text-gray-700 mb-1">
+                        Date of Extraction (DD.MM.YY)
                       </label>
                       <input
                         type="text"
-                        id="dateOfSubmission"
-                        value={editedReceipt.dateOfSubmission}
-                        onChange={(e) => handleInputChange(e, 'dateOfSubmission')}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                        id="dateOfExtraction"
+                        value={editedReceipt.dateOfExtraction}
+                        onChange={(e) => handleInputChange(e, 'dateOfExtraction')}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-amber-500 focus:border-amber-500"
                       />
-                    </div>
-                    
-                    <div className="flex items-center">
-                      <input
-                        type="checkbox"
-                        id="fulfilled"
-                        checked={editedReceipt.fulfilled}
-                        onChange={handleFulfilledChange}
-                        className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                      />
-                      <label htmlFor="fulfilled" className="ml-2 block text-sm text-gray-700">
-                        Fulfilled
-                      </label>
                     </div>
                   </div>
                   
@@ -734,64 +657,38 @@ const IncomingReceiptScreen = () => {
                       value={editedReceipt.remarks}
                       onChange={(e) => handleInputChange(e, 'remarks')}
                       rows={3}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-amber-500 focus:border-amber-500"
                     />
                   </div>
                   
                   {/* Order Details */}
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-800 mb-4">Order Details</h3>
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4">Inventory Removed Details</h3>
                     
-                    {/* Single Variety and Location Section - Show only one time */}
+                    {/* Single Variety Section - Show only one time */}
                     <div className="border border-gray-200 rounded-lg p-4 mb-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                         <div>
-                          <label htmlFor="variety" className="block text-sm font-medium text-gray-700 mb-1">
-                            Potato Variety <span className="text-red-500">*</span>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Potato Variety (Non-editable)
                           </label>
                           <input
                             type="text"
-                            id="variety"
                             value={editedReceipt.orderDetails[0]?.variety || ""}
-                            onChange={(e) => {
-                              // Update variety in all orderDetails entries 
-                              // (though we'll only use the first one when saving)
-                              const updatedOrderDetails = editedReceipt.orderDetails.map(detail => ({
-                                ...detail,
-                                variety: e.target.value
-                              }));
-                              setEditedReceipt({
-                                ...editedReceipt,
-                                orderDetails: updatedOrderDetails,
-                              });
-                            }}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                            required
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-100"
+                            disabled
                           />
-                          <p className="text-xs text-gray-500 mt-1">This variety applies to all bag sizes below</p>
                         </div>
                         
                         <div>
-                          <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-1">
-                            Storage Location <span className="text-red-500">*</span>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Storage Location (Non-editable)
                           </label>
                           <input
                             type="text"
-                            id="location"
-                            value={editedReceipt.orderDetails[0]?.location || ""}
-                            onChange={(e) => {
-                              // Update location in all orderDetails entries
-                              const updatedOrderDetails = editedReceipt.orderDetails.map(detail => ({
-                                ...detail,
-                                location: e.target.value
-                              }));
-                              setEditedReceipt({
-                                ...editedReceipt,
-                                orderDetails: updatedOrderDetails,
-                              });
-                            }}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                            required
+                            value={editedReceipt.orderDetails[0]?.incomingOrder?.location || ""}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-100"
+                            disabled
                           />
                         </div>
                       </div>
@@ -803,48 +700,60 @@ const IncomingReceiptScreen = () => {
                         Bag Sizes for {editedReceipt.orderDetails[0]?.variety || ""}
                       </h5>
                       
-                      {editedReceipt.orderDetails[0]?.bagSizes.map((bag, bagIndex) => (
-                        <div key={bagIndex} className="grid grid-cols-3 gap-3 mb-3 p-3 bg-gray-50 rounded-md">
-                          <div>
-                            <label htmlFor={`size-${bagIndex}`} className="block text-xs font-medium text-gray-700 mb-1">
-                              Size
-                            </label>
-                            <input
-                              type="text"
-                              id={`size-${bagIndex}`}
-                              value={bag.size}
-                              onChange={(e) => handleBagSizeChange(e, 0, bagIndex, 'size')}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                            />
+                      {editedReceipt.orderDetails[0]?.bagSizes.map((bag, bagIndex) => {
+                        // Find the corresponding incoming bag
+                        const incomingBag = editedReceipt.orderDetails[0]?.incomingOrder?.incomingBagSizes.find(
+                          inBag => inBag.size === bag.size
+                        );
+                        
+                        return (
+                          <div key={bagIndex} className="grid grid-cols-3 gap-3 mb-3 p-3 bg-gray-50 rounded-md">
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">
+                                Size (Non-editable)
+                              </label>
+                              <input
+                                type="text"
+                                value={bag.size}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-100"
+                                disabled
+                              />
+                            </div>
+                            
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">
+                                Available Quantity (Non-editable)
+                              </label>
+                              <input
+                                type="number"
+                                value={incomingBag?.currentQuantity || 0}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-100"
+                                disabled
+                              />
+                            </div>
+                            
+                            <div>
+                              <label htmlFor={`quantityRemoved-${bagIndex}`} className="block text-xs font-medium text-gray-700 mb-1">
+                                Quantity Removed
+                              </label>
+                              <input
+                                type="number"
+                                id={`quantityRemoved-${bagIndex}`}
+                                value={bag.quantityRemoved}
+                                onChange={(e) => handleBagSizeChange(e, 0, bagIndex, 'quantityRemoved')}
+                                max={incomingBag?.currentQuantity || 0}
+                                min={0}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-amber-500 focus:border-amber-500"
+                              />
+                              {bag.quantityRemoved > (incomingBag?.currentQuantity || 0) && (
+                                <p className="text-xs text-red-500 mt-1">
+                                  Cannot exceed available quantity
+                                </p>
+                              )}
+                            </div>
                           </div>
-                          
-                          <div>
-                            <label htmlFor={`initialQuantity-${bagIndex}`} className="block text-xs font-medium text-gray-700 mb-1">
-                              Initial Quantity
-                            </label>
-                            <input
-                              type="number"
-                              id={`initialQuantity-${bagIndex}`}
-                              value={bag.quantity.initialQuantity}
-                              onChange={(e) => handleBagSizeChange(e, 0, bagIndex, 'quantity', 'initialQuantity')}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                            />
-                          </div>
-                          
-                          <div>
-                            <label htmlFor={`currentQuantity-${bagIndex}`} className="block text-xs font-medium text-gray-700 mb-1">
-                              Current Quantity
-                            </label>
-                            <input
-                              type="number"
-                              id={`currentQuantity-${bagIndex}`}
-                              value={bag.quantity.currentQuantity}
-                              onChange={(e) => handleBagSizeChange(e, 0, bagIndex, 'quantity', 'currentQuantity')}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                            />
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 </div>
@@ -868,7 +777,7 @@ const IncomingReceiptScreen = () => {
                   </button>
                   <button
                     type="submit"
-                    className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none disabled:bg-indigo-400"
+                    className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 focus:outline-none disabled:bg-amber-400"
                     disabled={submitting}
                   >
                     {submitting ? (
@@ -906,10 +815,10 @@ const IncomingReceiptScreen = () => {
             <div className="p-6">
               <div className="mb-4">
                 <p className="text-gray-700 mb-2">
-                  Are you sure you want to delete this receipt? This action cannot be undone.
+                  Are you sure you want to delete this outgoing delivery receipt? This action cannot be undone.
                 </p>
                 <p className="text-sm text-gray-500">
-                  Receipt #{receipt?.voucher.voucherNumber} for {farmerName}
+                  Delivery #{receipt?.voucher.voucherNumber} for {farmerName}
                 </p>
               </div>
               
@@ -949,4 +858,4 @@ const IncomingReceiptScreen = () => {
   );
 };
 
-export default IncomingReceiptScreen;
+export default OutgoingReceiptScreen;

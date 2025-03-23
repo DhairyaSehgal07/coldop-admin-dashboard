@@ -38,6 +38,7 @@ interface LoginResponse {
     updatedAt: string;
     __v: number;
   };
+  token: string;
 }
 
 const loginUser = async (
@@ -47,7 +48,6 @@ const loginUser = async (
     headers: {
       "Content-Type": "application/json",
     },
-    withCredentials: true,
   });
   return response.data;
 };
@@ -68,7 +68,10 @@ const LoginScreen = () => {
       toast.success("Login successful!");
 
       // Handle successful login
-      dispatch(setCredentials(data.superAdmin));
+      dispatch(setCredentials({
+        user: data.superAdmin,
+        token: data.token
+      }));
       navigate("/");
     },
     onError: (error: { response?: { data?: { message?: string } } }) => {

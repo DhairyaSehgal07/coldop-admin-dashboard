@@ -10,10 +10,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Building, Users, BadgeCheck } from "lucide-react";
 import { columns, ColdStorageResponse, StoreAdmin } from "./columnDefinitions";
 import { useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
+import { RootState } from "@/store";
 
 const ColdStorageScreen = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const navigate = useNavigate();
+  // Get the token from Redux store
+  const adminInfo = useSelector((state: RootState) => state.auth.adminInfo);
+  const token = adminInfo?.token;
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ["coldStorages"],
@@ -21,7 +26,9 @@ const ColdStorageScreen = () => {
       const response = await axios.get<ColdStorageResponse>(
         `${BASE_URL}/cold-storages`,
         {
-          withCredentials: true,
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
         }
       );
       if (response.status !== 200) {

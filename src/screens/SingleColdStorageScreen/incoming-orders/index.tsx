@@ -10,18 +10,24 @@ import {
   IncomingOrdersResponse,
 } from "./columnDefinition";
 import { StoreAdmin } from "@/screens/ColdStorageScreen/columnDefinitions";
-
+import { useSelector } from "react-redux";
+import { RootState } from "@/store";
 const IncomingOrdersTab = ({ coldStorageData }: { coldStorageData: StoreAdmin}) => {
 
   const navigate = useNavigate();
-  // Fetch incoming orders data
+
+    const adminInfo = useSelector((state: RootState) => state.auth.adminInfo);
+  const token = adminInfo?.token;
+  
 const { data, isLoading, isError } = useQuery({
   queryKey: ["incomingOrders", coldStorageData._id],
   queryFn: async () => {
     const response = await axios.get<IncomingOrdersResponse>(
       `${BASE_URL}/cold-storages/${coldStorageData._id}/incoming-orders`,
       {
-        withCredentials: true,
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
       }
     );
 
@@ -31,7 +37,6 @@ const { data, isLoading, isError } = useQuery({
 
     return response.data;
   },
-  refetchInterval: 3000, // Refetch every 3 seconds
 });
 
 

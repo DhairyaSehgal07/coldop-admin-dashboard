@@ -166,18 +166,19 @@ export function DataTable<TData, TValue>({
       </div>
 
       {/* Table with sticky header */}
-      <div className="relative">
-        {/* Sticky header */}
-        <div className="sticky top-0 z-10 bg-gray-50 shadow-sm">
-          <table className="w-full table-fixed divide-y divide-gray-200">
-            <thead>
+      <div className="relative overflow-hidden">
+        {/* Unified scrollable container for both header and body */}
+        <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 h-[calc(100vh-18rem)] max-h-96 overflow-y-auto">
+          <table className="w-full divide-y divide-gray-200 min-w-[640px]">
+            <thead className="sticky top-0 z-10 bg-gray-50 shadow-sm">
               {table.getHeaderGroups().map((headerGroup) => (
                 <tr key={headerGroup.id}>
                   {headerGroup.headers.map((header) => (
                     <th
                       key={header.id}
                       scope="col"
-                      className="group px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-[33%]"
+                      className="group px-4 sm:px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider"
+                      style={{ width: header.getSize() }}
                     >
                       {header.isPlaceholder ? null : (
                         <div className="flex flex-col space-y-2">
@@ -217,12 +218,6 @@ export function DataTable<TData, TValue>({
                 </tr>
               ))}
             </thead>
-          </table>
-        </div>
-
-        {/* Scrollable table body */}
-        <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 h-96 overflow-y-auto">
-          <table className="w-full table-fixed divide-y divide-gray-200">
             <tbody className="bg-white divide-y divide-gray-200">
               {table.getRowModel().rows?.length ? (
                 table.getRowModel().rows.map((row, index) => (
@@ -239,7 +234,8 @@ export function DataTable<TData, TValue>({
                     {row.getVisibleCells().map((cell) => (
                       <td
                         key={cell.id}
-                        className="px-6 py-4 text-sm font-medium text-gray-700 truncate w-[33%]"
+                        className="px-4 sm:px-6 py-3 sm:py-4 text-sm font-medium text-gray-700 break-words"
+                        style={{ width: cell.column.getSize() }}
                       >
                         {flexRender(
                           cell.column.columnDef.cell,

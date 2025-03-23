@@ -18,6 +18,7 @@ import PublicRoute from "./components/common/PublicRoute.tsx";
 import ColdStorageScreen from "./screens/ColdStorageScreen/index.tsx";
 import SingleColdStorageScreen from "./screens/SingleColdStorageScreen/index.tsx";
 import IncomingReceiptScreen from "./screens/IncomingReceiptScreen.tsx";
+import OutgoingReceiptScreen from "./screens/OutgoingReceiptScreen.tsx";
 
 // Initialize the Query Client
 const queryClient = new QueryClient();
@@ -33,6 +34,10 @@ const router = createBrowserRouter(
       <Route
         path="/cold-storages/:id/incoming-orders/:orderId"
         element={<IncomingReceiptScreen />}
+      />
+        <Route
+        path="/cold-storages/:id/outgoing-orders/:orderId"
+        element={<OutgoingReceiptScreen />}
       />
 
       <Route path="" element={<PublicRoute />}>
