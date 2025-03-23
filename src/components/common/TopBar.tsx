@@ -18,7 +18,7 @@ interface TopBarProps {
 }
 
 const logoutUser = async () => {
-  await axios.post(`${BASE_URL}/logout`, {}, { withCredentials: true });
+  await axios.post(`${BASE_URL}/logout`, {});
 };
 
 const TopBar: React.FC<TopBarProps> = ({
