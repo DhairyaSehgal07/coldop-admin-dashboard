@@ -79,7 +79,7 @@ export const columns: ColumnDef<Farmer>[] = [
         {row.original.isVerified ? "Verified" : "Unverified"}
       </Badge>
     ),
-    filterFn: (row, columnId, filterValue) => {
+    filterFn: (row,  filterValue) => {
       const status = row.original.isVerified ? "verified" : "unverified";
       return status.includes(String(filterValue).toLowerCase());
     },

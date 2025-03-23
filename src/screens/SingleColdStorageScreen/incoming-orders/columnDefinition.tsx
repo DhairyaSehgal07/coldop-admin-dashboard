@@ -84,7 +84,7 @@ export const columns: ColumnDef<IncomingOrder>[] = [
         ))}
       </div>
     ),
-    filterFn: (row, columnId, filterValue) => {
+    filterFn: (row,  filterValue) => {
       const varieties = row.original.orderDetails.map((detail) =>
         detail.variety.toLowerCase()
       );
@@ -129,7 +129,7 @@ export const columns: ColumnDef<IncomingOrder>[] = [
         ))}
       </div>
     ),
-    filterFn: (row, columnId, filterValue) => {
+    filterFn: (row,filterValue) => {
       const locations = row.original.orderDetails.map((detail) =>
         detail.location.toLowerCase()
       );
@@ -149,7 +149,7 @@ export const columns: ColumnDef<IncomingOrder>[] = [
         {row.original.fulfilled ? "Fulfilled" : "Pending"}
       </Badge>
     ),
-    filterFn: (row, columnId, filterValue) => {
+    filterFn: (row,  filterValue) => {
       const status = row.original.fulfilled ? "fulfilled" : "pending";
       return status.includes(String(filterValue).toLowerCase());
     },

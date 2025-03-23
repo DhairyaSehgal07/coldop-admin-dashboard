@@ -1,9 +1,21 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Download, Upload } from "lucide-react";
 
-const StorageActivitySection = ({ activities }) => {
+// Define the type for activity
+interface Activity {
+  id: string; // Assuming activities have an `id`, replace with `index` if not available
+  type: "incoming" | "outgoing" | string;
+  description: string;
+  timestamp: string;
+}
+
+interface StorageActivitySectionProps {
+  activities: Activity[];
+}
+
+const StorageActivitySection: React.FC<StorageActivitySectionProps> = ({ activities }) => {
   // Function to get the appropriate icon based on activity type
-  const getActivityIcon = (type) => {
+  const getActivityIcon = (type: Activity["type"]) => {
     switch (type) {
       case "incoming":
         return <Download className="h-5 w-5 text-green-600" />;
@@ -15,7 +27,7 @@ const StorageActivitySection = ({ activities }) => {
   };
 
   // Function to get color classes based on activity type
-  const getActivityColorClasses = (type) => {
+  const getActivityColorClasses = (type: Activity["type"]) => {
     switch (type) {
       case "incoming":
         return "bg-green-100 text-green-600";
@@ -36,8 +48,8 @@ const StorageActivitySection = ({ activities }) => {
           {activities.length === 0 ? (
             <p className="text-gray-500 text-center py-4">No recent activity</p>
           ) : (
-            activities.map((activity, index) => (
-              <div key={index} className="flex items-start">
+            activities.map((activity) => (
+              <div key={activity.id} className="flex items-start">
                 <div
                   className={`h-8 w-8 rounded-full flex items-center justify-center mr-4 ${getActivityColorClasses(
                     activity.type

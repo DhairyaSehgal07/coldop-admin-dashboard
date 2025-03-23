@@ -96,7 +96,7 @@ export const columns: ColumnDef<OutgoingOrder>[] = [
         ))}
       </div>
     ),
-    filterFn: (row, columnId, filterValue) => {
+    filterFn: (row,  filterValue) => {
       const varieties = row.original.orderDetails.map((detail) =>
         detail.variety.toLowerCase()
       );
@@ -141,7 +141,7 @@ export const columns: ColumnDef<OutgoingOrder>[] = [
         ))}
       </div>
     ),
-    filterFn: (row, columnId, filterValue) => {
+    filterFn: (row,  filterValue) => {
       const locations = row.original.orderDetails.map((detail) =>
         detail.incomingOrder.location.toLowerCase()
       );
