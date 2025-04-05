@@ -19,6 +19,7 @@ import ColdStorageScreen from "./screens/ColdStorageScreen/index.tsx";
 import SingleColdStorageScreen from "./screens/SingleColdStorageScreen/index.tsx";
 import IncomingReceiptScreen from "./screens/IncomingReceiptScreen.tsx";
 import OutgoingReceiptScreen from "./screens/OutgoingReceiptScreen.tsx";
+import SingleFarmerScreen from "./screens/SingleFarmerScreen.tsx";
 
 // Initialize the Query Client
 const queryClient = new QueryClient();
@@ -38,6 +39,10 @@ const router = createBrowserRouter(
         <Route
         path="/cold-storages/:id/outgoing-orders/:orderId"
         element={<OutgoingReceiptScreen />}
+      />
+      <Route
+        path="/cold-storages/:id/farmers/:farmerId"
+        element={<SingleFarmerScreen />}
       />
 
       <Route path="" element={<PublicRoute />}>
