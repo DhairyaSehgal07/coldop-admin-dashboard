@@ -46,6 +46,13 @@ interface TopFarmersResponse {
   data: TopFarmer[];
 }
 
+// Add a new interface for processed farmer data
+interface ProcessedFarmerData {
+  name: string;
+  totalBags: number;
+  [key: string]: string | number; // This allows string indexing
+}
+
 interface TooltipProps {
   active?: boolean;
   payload?: Array<{
@@ -107,7 +114,7 @@ const OverviewTab = ({ summaryData, coldStorageId }: OverviewTabProps) => {
       name: farmer.farmerName,
       totalBags: farmer.totalBags,
       ...farmer.bagSummary
-    }));
+    })) as ProcessedFarmerData[];
   };
 
   // Create pie chart data for size distribution across all varieties
@@ -613,22 +620,22 @@ const OverviewTab = ({ summaryData, coldStorageId }: OverviewTabProps) => {
                       <div className="pt-2 border-t border-amber-200">
                         <div className="text-xs font-medium text-amber-700 mb-1">Specialty Breakdown</div>
                         {(() => {
-                          const farmer = topFarmersData[0];
+                          const farmer = topFarmersData[0] as ProcessedFarmerData;
                           const bagTypes = Object.keys(farmer).filter(key =>
                             key !== 'name' && key !== 'totalBags'
                           );
 
-                          const sorted = bagTypes.sort((a, b) => farmer[b] - farmer[a]);
+                          const sorted = bagTypes.sort((a, b) => (farmer[b] as number) - (farmer[a] as number));
                           const topType = sorted[0];
 
                           if (!topType) return null;
 
-                          const percentage = ((farmer[topType] / farmer.totalBags) * 100).toFixed(1);
+                          const percentage = ((farmer[topType] as number) / farmer.totalBags * 100).toFixed(1);
 
                           return (
                             <div className="flex items-center gap-2 text-sm text-amber-900">
                               <span className="font-semibold">{topType}:</span>
-                              <span>{farmer[topType].toLocaleString()} bags ({percentage}%)</span>
+                              <span>{(farmer[topType] as number).toLocaleString()} bags ({percentage}%)</span>
                             </div>
                           );
                         })()}
