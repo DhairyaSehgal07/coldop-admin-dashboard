@@ -441,7 +441,7 @@ const OverviewTab = ({ summaryData, coldStorageId }: OverviewTabProps) => {
                         );
                       }}
                     >
-                      {sizeDistributionData.map((entry, index) => (
+                      {sizeDistributionData.map((_entry, index) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
