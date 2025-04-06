@@ -8,20 +8,41 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import TopBar from "@/components/common/TopBar";
 import Sidebar from "@/components/common/Sidebar";
+import { useQuery } from "@tanstack/react-query";
+import { useSelector } from "react-redux";
+import { RootState } from "@/store";
+import { Progress } from "@/components/ui/progress";
 
 import OverviewTab from "./overview";
 import FarmersTab from "./farmers";
 import IncomingOrdersTab from "./incoming-orders";
 import OutgoingOrdersTab from "./outgoing-orders";
+import axios from "axios";
+import { BASE_URL } from "@/utils/const";
+
+interface Size {
+  size: string;
+  initialQuantity: number;
+  currentQuantity: number;
+}
+
+interface Variety {
+  variety: string;
+  sizes: Size[];
+}
+
+interface SummaryResponse {
+  status: string;
+  stockSummary: Variety[];
+}
 
 const SingleColdStorageScreen = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { id } = useParams();
   const location = useLocation();
-
+  const admin = useSelector((state: RootState) => state.auth.adminInfo);
   const [coldStorageData] = useState(location.state?.coldStorage || {});
 
-  console.log("cold storage data is: ", coldStorageData);
 
   const [activeTab, setActiveTab] = useState(() => {
     const savedTab = localStorage.getItem(`coldStorage_${id}_activeTab`);
@@ -37,6 +58,39 @@ const SingleColdStorageScreen = () => {
       setIsSidebarOpen(false);
     }
   };
+
+  const { data: summaryData } = useQuery({
+    queryKey: ['coldStorageSummary', id],
+    queryFn: async () => {
+      try {
+        const res = await axios.get<SummaryResponse>(`${BASE_URL}/cold-storages/${id}/summary`, {
+          headers: {
+            Authorization: `Bearer ${admin?.token}`,
+          },
+        });
+        return res.data;
+      } catch (err) {
+        console.log("error in getting summary is: ", err);
+        throw err;
+      }
+    },
+    enabled: !!admin?.token && !!id,
+  });
+
+  // Calculate total current quantity and occupancy percentage
+  const calculateTotalCurrentQuantity = () => {
+    if (!summaryData?.stockSummary) return 0;
+
+    return summaryData.stockSummary.reduce((total, variety) => {
+      return total + variety.sizes.reduce((sizeTotal, size) => {
+        return sizeTotal + size.currentQuantity;
+      }, 0);
+    }, 0);
+  };
+
+  const totalCurrentQuantity = calculateTotalCurrentQuantity();
+  const capacity = coldStorageData.coldStorageDetails?.capacity || 0;
+  const occupancyPercentage = capacity > 0 ? Math.min(Math.round((totalCurrentQuantity / capacity) * 100), 100) : 0;
 
   return (
     <div
@@ -140,7 +194,7 @@ const SingleColdStorageScreen = () => {
           <Card className="shadow-sm">
             <CardContent className="p-4">
               <div className="flex justify-between items-start">
-                <div>
+                <div className="w-full">
                   <h3 className="text-sm font-medium text-gray-500">
                     Capacity
                   </h3>
@@ -151,12 +205,19 @@ const SingleColdStorageScreen = () => {
                     <div className="mt-2">
                       <Badge
                         variant={
-                          coldStorageData.occupancy < 50 ? "outline" : "default"
+                          occupancyPercentage < 50 ? "outline" : "default"
                         }
                         className="bg-green-100 text-green-800 border-green-200"
                       >
-                        {coldStorageData.occupancy}% Occupied
+                        {occupancyPercentage}% Occupied
                       </Badge>
+                    </div>
+                    <div className="mt-3">
+                      <Progress
+                        value={occupancyPercentage}
+                        className="h-2 bg-indigo-100 [&>[data-slot=progress-indicator]]:bg-indigo-600"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">{totalCurrentQuantity} / {capacity} units used</p>
                     </div>
                   </div>
                 </div>
@@ -290,7 +351,7 @@ const SingleColdStorageScreen = () => {
               <div className="bg-white p-4">
                 <TabsContent value="overview" className="space-y-4 mt-0">
                   <div className="grid md:grid-cols-2 gap-4">
-                    <OverviewTab />
+                    <OverviewTab summaryData={summaryData} coldStorageId={id} />
                   </div>
                 </TabsContent>
 
