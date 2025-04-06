@@ -277,7 +277,10 @@ const OverviewTab = ({ summaryData, coldStorageId }: OverviewTabProps) => {
   );
 
   return (
-    <div className="w-full p-4 md:p-6 bg-gray-50 max-w-full">
+    <div className="overflow-x-auto">
+
+
+    <div className="sm:w-full md:w-full  lg:w-[1130px]  md:p-6 bg-gray-50">
       {/* Dashboard Header */}
       <div className="mb-6">
         <h1 className="text-2xl md:text-3xl font-bold text-gray-800 tracking-tight">Cold Storage Overview</h1>
@@ -677,6 +680,7 @@ const OverviewTab = ({ summaryData, coldStorageId }: OverviewTabProps) => {
         </div>
       </section>
     </div>
+       </div>
   );
 };
 
