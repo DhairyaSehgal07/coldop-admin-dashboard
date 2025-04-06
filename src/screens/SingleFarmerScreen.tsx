@@ -19,6 +19,8 @@ import {
   ShoppingBag,
   MapPinned,
   Tag,
+  BarChart2,
+  TrendingUp,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import TopBar from "../components/common/TopBar";
@@ -28,6 +30,7 @@ import { useSelector } from "react-redux";
 import { RootState } from "@/store";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area } from 'recharts';
 
 interface Farmer {
   _id: string;
@@ -81,6 +84,24 @@ interface OrdersResponse {
   data: Order[];
 }
 
+// Order frequency interface
+interface FrequencyData {
+  period: string;
+  count: number;
+  totalQuantity: number;
+}
+
+interface OrderFrequencyResponse {
+  status: string;
+  message: string;
+  data: {
+    orderCount: number;
+    monthlyFrequency: FrequencyData[];
+    quarterlyFrequency: FrequencyData[];
+    avgOrderInterval: number;
+  };
+}
+
 const SingleFarmerScreen = () => {
   const routerLocation = useLocation();
   const navigate = useNavigate();
@@ -91,6 +112,8 @@ const SingleFarmerScreen = () => {
   const [error, setError] = useState<string | null>(null);
   const [showOrders, setShowOrders] = useState(false);
   const [expandedOrders, setExpandedOrders] = useState<{[key: string]: boolean}>({});
+  const [showOrderFrequency, setShowOrderFrequency] = useState(false);
+  const [frequencyPeriod, setFrequencyPeriod] = useState<'monthly' | 'quarterly'>('monthly');
 
   const adminInfo = useSelector((state: RootState) => state.auth.adminInfo);
   const token = adminInfo?.token;
@@ -115,6 +138,34 @@ const SingleFarmerScreen = () => {
 
       const response = await axios.get<OrdersResponse>(
         `${BASE_URL}/cold-storages/${coldStorageId}/farmers/${farmerInfo._id}/orders`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      return response.data;
+    },
+    enabled: false, // Don't run the query on component mount
+  });
+
+  // Use React Query for fetching order frequency data
+  const {
+    data: orderFrequencyData,
+    isLoading: loadingFrequency,
+    isError: isFrequencyError,
+    error: frequencyError,
+    refetch: refetchFrequency
+  } = useQuery<OrderFrequencyResponse, Error>({
+    queryKey: ["orderFrequency", farmerInfo?._id, coldStorageId],
+    queryFn: async () => {
+      if (!farmerInfo || !coldStorageId) {
+        throw new Error("Required IDs not available. Cannot fetch order frequency data.");
+      }
+
+      const response = await axios.get<OrderFrequencyResponse>(
+        `${BASE_URL}/cold-storages/${coldStorageId}/farmers/${farmerInfo._id}/order-frequency`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -271,6 +322,62 @@ const SingleFarmerScreen = () => {
       refetchOrders();
     }
   };
+
+  // Handle view order frequency button click
+  const handleViewOrderFrequency = () => {
+    if (showOrderFrequency) {
+      setShowOrderFrequency(false);
+    } else {
+      setShowOrderFrequency(true);
+      refetchFrequency();
+    }
+  };
+
+  // Toggle frequency period
+  const toggleFrequencyPeriod = () => {
+    setFrequencyPeriod(prev => prev === 'monthly' ? 'quarterly' : 'monthly');
+  };
+
+  // Function to calculate additional insights
+  const calculateFrequencyInsights = () => {
+    if (!orderFrequencyData?.data) return null;
+
+    const { monthlyFrequency, quarterlyFrequency, orderCount } = orderFrequencyData.data;
+
+    // Find month/quarter with highest order count
+    const highestMonthly = [...monthlyFrequency].sort((a, b) => b.count - a.count)[0];
+    const highestQuarterly = [...quarterlyFrequency].sort((a, b) => b.count - a.count)[0];
+
+    // Find month/quarter with highest quantity
+    const highestQuantityMonthly = [...monthlyFrequency].sort((a, b) => b.totalQuantity - a.totalQuantity)[0];
+    const highestQuantityQuarterly = [...quarterlyFrequency].sort((a, b) => b.totalQuantity - a.totalQuantity)[0];
+
+    // Calculate average quantity per order
+    const totalQuantity = monthlyFrequency.reduce((sum, item) => sum + item.totalQuantity, 0);
+    const avgQuantityPerOrder = orderCount > 0 ? Math.round(totalQuantity / orderCount) : 0;
+
+    // Calculate growth rate if multiple periods exist
+    let growthRate = null;
+    if (monthlyFrequency.length >= 2) {
+      const current = monthlyFrequency[monthlyFrequency.length - 1];
+      const previous = monthlyFrequency[monthlyFrequency.length - 2];
+      growthRate = previous.count > 0
+        ? ((current.count - previous.count) / previous.count) * 100
+        : null;
+    }
+
+    return {
+      highestMonthly,
+      highestQuarterly,
+      highestQuantityMonthly,
+      highestQuantityQuarterly,
+      totalQuantity,
+      avgQuantityPerOrder,
+      growthRate
+    };
+  };
+
+  const frequencyInsights = calculateFrequencyInsights();
 
   if (!farmerInfo) {
     return (
@@ -438,6 +545,28 @@ const SingleFarmerScreen = () => {
               <div className="mt-6 flex flex-col sm:flex-row sm:justify-end space-y-3 sm:space-y-0 sm:space-x-3">
                 <button
                   type="button"
+                  onClick={handleViewOrderFrequency}
+                  className={`inline-flex items-center justify-center px-4 py-2 border rounded-md shadow-sm text-sm font-medium focus:outline-none transition-colors ${
+                    showOrderFrequency
+                      ? "border-indigo-600 bg-indigo-50 text-indigo-700 hover:bg-indigo-100"
+                      : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+                  }`}
+                >
+                  {showOrderFrequency ? (
+                    <>
+                      <ChevronUp className="mr-2 h-4 w-4" />
+                      Hide Frequency Analysis
+                    </>
+                  ) : (
+                    <>
+                      <BarChart2 className="mr-2 h-4 w-4" />
+                      View Frequency Analysis
+                    </>
+                  )}
+                </button>
+
+                <button
+                  type="button"
                   onClick={handleViewOrders}
                   className={`inline-flex items-center justify-center px-4 py-2 border rounded-md shadow-sm text-sm font-medium focus:outline-none transition-colors ${
                     showOrders
@@ -457,6 +586,7 @@ const SingleFarmerScreen = () => {
                     </>
                   )}
                 </button>
+
                 {!farmerInfo.isVerified && (
                   <button className="inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none">
                     Verify Farmer
@@ -465,6 +595,255 @@ const SingleFarmerScreen = () => {
               </div>
             </div>
           </div>
+
+          {/* Order Frequency Analysis Section */}
+          {showOrderFrequency && (
+            <div className="mt-6">
+              <div className="bg-white rounded-lg shadow overflow-hidden">
+                <div className="px-6 py-4 border-b border-gray-200 bg-indigo-50">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <BarChart2 className="h-5 w-5 mr-2 text-indigo-600" />
+                      <h3 className="text-lg font-semibold text-gray-800">Order Frequency Analysis</h3>
+                    </div>
+                    <div>
+                      <button
+                        onClick={toggleFrequencyPeriod}
+                        className="text-sm px-3 py-1 rounded bg-indigo-100 text-indigo-700 hover:bg-indigo-200 transition"
+                      >
+                        {frequencyPeriod === 'monthly' ? 'Switch to Quarterly' : 'Switch to Monthly'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-6">
+                  {loadingFrequency ? (
+                    <div className="flex justify-center items-center p-8">
+                      <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
+                      <span className="ml-3 text-gray-600">Loading frequency data...</span>
+                    </div>
+                  ) : isFrequencyError ? (
+                    <div className="p-4 bg-red-50 text-red-700 rounded-md flex items-center">
+                      <X className="h-5 w-5 mr-2" />
+                      <p>{frequencyError instanceof Error ? frequencyError.message : "Failed to load frequency data"}</p>
+                    </div>
+                  ) : orderFrequencyData?.data ? (
+                    <div className="space-y-8">
+                      {/* Key Metrics Cards */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                          <div className="flex justify-between items-start mb-2">
+                            <h3 className="text-sm font-medium text-gray-500">Total Orders</h3>
+                            <div className="p-2 rounded-full bg-indigo-50">
+                              <Package className="h-4 w-4 text-indigo-600" />
+                            </div>
+                          </div>
+                          <div className="mt-1">
+                            <div className="text-2xl font-bold text-gray-800">{orderFrequencyData.data.orderCount}</div>
+                            <p className="text-sm text-gray-600 mt-1">Orders placed so far</p>
+                          </div>
+                        </div>
+
+                        {frequencyInsights && (
+                          <>
+                            <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                              <div className="flex justify-between items-start mb-2">
+                                <h3 className="text-sm font-medium text-gray-500">Avg. Quantity Per Order</h3>
+                                <div className="p-2 rounded-full bg-pink-50">
+                                  <ShoppingBag className="h-4 w-4 text-pink-600" />
+                                </div>
+                              </div>
+                              <div className="mt-1">
+                                <div className="text-2xl font-bold text-gray-800">{frequencyInsights.avgQuantityPerOrder}</div>
+                                <p className="text-sm text-gray-600 mt-1">Bags per order</p>
+                              </div>
+                            </div>
+
+                            <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                              <div className="flex justify-between items-start mb-2">
+                                <h3 className="text-sm font-medium text-gray-500">
+                                  {frequencyPeriod === 'monthly' ? 'Peak Month' : 'Peak Quarter'}
+                                </h3>
+                                <div className="p-2 rounded-full bg-emerald-50">
+                                  <TrendingUp className="h-4 w-4 text-emerald-600" />
+                                </div>
+                              </div>
+                              <div className="mt-1">
+                                <div className="text-2xl font-bold text-gray-800">
+                                  {frequencyPeriod === 'monthly'
+                                    ? frequencyInsights.highestMonthly.period
+                                    : frequencyInsights.highestQuarterly.period}
+                                </div>
+                                <p className="text-sm text-gray-600 mt-1">
+                                  {frequencyPeriod === 'monthly'
+                                    ? `${frequencyInsights.highestMonthly.count} orders / ${frequencyInsights.highestMonthly.totalQuantity} bags`
+                                    : `${frequencyInsights.highestQuarterly.count} orders / ${frequencyInsights.highestQuarterly.totalQuantity} bags`}
+                                </p>
+                              </div>
+                            </div>
+                          </>
+                        )}
+                      </div>
+
+                      {/* Charts Section */}
+                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        {/* Line chart for order count */}
+                        <div className="lg:col-span-2 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                          <h4 className="text-base font-semibold text-gray-800 mb-3">
+                            Order Frequency Trend ({frequencyPeriod === 'monthly' ? 'Monthly' : 'Quarterly'})
+                          </h4>
+                          <div className="h-80">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <LineChart
+                                data={frequencyPeriod === 'monthly'
+                                  ? orderFrequencyData.data.monthlyFrequency
+                                  : orderFrequencyData.data.quarterlyFrequency}
+                                margin={{ top: 10, right: 30, left: 10, bottom: 25 }}
+                              >
+                                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                                <XAxis
+                                  dataKey="period"
+                                  tick={{ fill: '#4B5563', fontSize: 11 }}
+                                  angle={-45}
+                                  textAnchor="end"
+                                  height={60}
+                                />
+                                <YAxis
+                                  yAxisId="left"
+                                  tick={{ fill: '#4B5563', fontSize: 11 }}
+                                  orientation="left"
+                                  stroke="#8884d8"
+                                />
+                                <YAxis
+                                  yAxisId="right"
+                                  orientation="right"
+                                  tick={{ fill: '#4B5563', fontSize: 11 }}
+                                  stroke="#82ca9d"
+                                />
+                                <Tooltip />
+                                <Legend />
+                                <Line
+                                  yAxisId="left"
+                                  type="monotone"
+                                  dataKey="count"
+                                  name="Number of Orders"
+                                  stroke="#8884d8"
+                                  activeDot={{ r: 8 }}
+                                  strokeWidth={2}
+                                />
+                                <Line
+                                  yAxisId="right"
+                                  type="monotone"
+                                  dataKey="totalQuantity"
+                                  name="Total Bags"
+                                  stroke="#82ca9d"
+                                  strokeWidth={2}
+                                />
+                              </LineChart>
+                            </ResponsiveContainer>
+                          </div>
+                        </div>
+
+                        {/* Area chart for total quantity */}
+                        <div className="lg:col-span-1 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                          <h4 className="text-base font-semibold text-gray-800 mb-3">Volume Trend</h4>
+                          <div className="h-80">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <AreaChart
+                                data={frequencyPeriod === 'monthly'
+                                  ? orderFrequencyData.data.monthlyFrequency
+                                  : orderFrequencyData.data.quarterlyFrequency}
+                                margin={{ top: 10, right: 30, left: 0, bottom: 25 }}
+                              >
+                                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                                <XAxis
+                                  dataKey="period"
+                                  tick={{ fill: '#4B5563', fontSize: 11 }}
+                                  angle={-45}
+                                  textAnchor="end"
+                                  height={60}
+                                />
+                                <YAxis tick={{ fill: '#4B5563', fontSize: 11 }} />
+                                <Tooltip />
+                                <Area
+                                  type="monotone"
+                                  dataKey="totalQuantity"
+                                  name="Total Bags"
+                                  stroke="#8884d8"
+                                  fill="#8884d8"
+                                  fillOpacity={0.3}
+                                />
+                              </AreaChart>
+                            </ResponsiveContainer>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Insights Box */}
+                      {frequencyInsights && (
+                        <div className="bg-blue-50 rounded-lg p-4 border border-blue-100">
+                          <h4 className="font-medium text-blue-800 mb-3 text-sm">Order Pattern Insights</h4>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-3">
+                              <div className="flex items-start gap-2">
+                                <TrendingUp className="h-4 w-4 text-blue-700 mt-0.5" />
+                                <div>
+                                  <p className="text-xs font-medium text-blue-600">Volume Trend</p>
+                                  <p className="text-sm text-blue-800">
+                                    {frequencyInsights.growthRate !== null
+                                      ? (frequencyInsights.growthRate > 0
+                                        ? `${frequencyInsights.growthRate.toFixed(1)}% increase in order frequency`
+                                        : `${Math.abs(frequencyInsights.growthRate).toFixed(1)}% decrease in order frequency`)
+                                      : "Not enough data to calculate trend"}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="space-y-3">
+                              <div className="flex items-start gap-2">
+                                <ShoppingBag className="h-4 w-4 text-blue-700 mt-0.5" />
+                                <div>
+                                  <p className="text-xs font-medium text-blue-600">Order Volume</p>
+                                  <p className="text-sm text-blue-800">
+                                    Total of {frequencyInsights.totalQuantity.toLocaleString()} bags ordered across {orderFrequencyData.data.orderCount} orders
+                                  </p>
+                                </div>
+                              </div>
+
+                              <div className="flex items-start gap-2">
+                                <Package className="h-4 w-4 text-blue-700 mt-0.5" />
+                                <div>
+                                  <p className="text-xs font-medium text-blue-600">Peak Activity</p>
+                                  <p className="text-sm text-blue-800">
+                                    Highest activity in {frequencyPeriod === 'monthly'
+                                      ? frequencyInsights.highestQuantityMonthly.period
+                                      : frequencyInsights.highestQuantityQuarterly.period}
+                                    with {frequencyPeriod === 'monthly'
+                                      ? frequencyInsights.highestQuantityMonthly.totalQuantity
+                                      : frequencyInsights.highestQuantityQuarterly.totalQuantity} bags
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="p-6 text-center">
+                      <div className="inline-flex items-center justify-center p-3 bg-indigo-50 rounded-full mb-4">
+                        <BarChart2 className="h-6 w-6 text-indigo-500" />
+                      </div>
+                      <h3 className="text-lg font-medium text-gray-800 mb-1">No Frequency Data Found</h3>
+                      <p className="text-gray-600">This farmer's order frequency data is not available.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Orders Section */}
           {showOrders && (
