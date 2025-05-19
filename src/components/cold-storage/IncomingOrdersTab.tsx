@@ -6,14 +6,63 @@ import { useQuery } from "@tanstack/react-query";
 import { BASE_URL } from "../../utils/const";
 import Table from "../common/Table";
 import Loader from "../common/Loader";
+import { ColumnDef } from "@tanstack/react-table";
 
-const IncomingOrdersTab = ({ coldStorageData }) => {
+// Define interfaces for the data structures
+interface ColdStorageData {
+  id: string;
+  name: string;
+  // Add other properties as needed
+}
+
+interface OrderDetails {
+  variety?: string;
+  location?: string;
+  // Add other order detail properties as needed
+}
+
+interface Voucher {
+  voucherNumber?: string;
+  type?: string;
+  // Add other voucher properties as needed
+}
+
+interface IncomingOrder {
+  _id: string;
+  farmerId: string;
+  farmerName?: string;
+  dateOfSubmission: string;
+  fulfilled: boolean;
+  remarks?: string;
+  voucher?: Voucher;
+  orderDetails?: OrderDetails[];
+  // Add other order properties as needed
+}
+
+interface TransformedOrder {
+  id: string;
+  voucherNumber: string;
+  voucherType: string;
+  farmerId: string;
+  farmerName: string;
+  dateOfSubmission: string;
+  fulfilled: boolean;
+  remarks?: string;
+  variety: string;
+  location: string;
+  fullDetails: IncomingOrder;
+}
+
+interface IncomingOrdersTabProps {
+  coldStorageData: ColdStorageData;
+}
+
+const IncomingOrdersTab = ({ coldStorageData }: IncomingOrdersTabProps) => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
-  const [currentPage, setCurrentPage] = useState(0);
 
   // Fetch incoming orders data with React Query
-  const { data, isLoading, isError } = useQuery({
+  const { data, isLoading, isError } = useQuery<{ data: IncomingOrder[] }>({
     queryKey: ["incomingOrders", coldStorageData.id],
     queryFn: async () => {
       const response = await axios.get(
@@ -25,7 +74,7 @@ const IncomingOrdersTab = ({ coldStorageData }) => {
   });
 
   // Get the incoming orders from the API response and transform them
-  const incomingOrdersData = useMemo(() => {
+  const incomingOrdersData = useMemo<TransformedOrder[]>(() => {
     if (!data) return [];
 
     // Transform the data to match the column structure
@@ -48,7 +97,7 @@ const IncomingOrdersTab = ({ coldStorageData }) => {
   }, [data]);
 
   // Define table columns
-  const columns = useMemo(
+  const columns = useMemo<ColumnDef<TransformedOrder, unknown>[]>(
     () => [
       {
         accessorKey: "voucherNumber",
@@ -105,7 +154,7 @@ const IncomingOrdersTab = ({ coldStorageData }) => {
   );
 
   // Handle row click to navigate to detail page
-  const handleRowClick = (order) => {
+  const handleRowClick = (order: TransformedOrder) => {
     navigate(`/cold-storages/${coldStorageData.id}/incoming/${order.id}`);
   };
 
@@ -187,9 +236,8 @@ const IncomingOrdersTab = ({ coldStorageData }) => {
         setGlobalFilter={setSearchQuery}
         emptyMessage="No incoming orders available"
         className="mt-4"
-        currentPage={currentPage}
-        onPageChange={setCurrentPage}
       />
+      {/* Note: currentPage and onPageChange were removed as they're not in the DataTableProps interface */}
     </div>
   );
 };

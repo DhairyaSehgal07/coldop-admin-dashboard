@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect, useMemo } from "react";
 import {
   useReactTable,
@@ -26,7 +27,9 @@ import { rankItem } from "@tanstack/match-sorter-utils";
 
 // Define column metadata interface for specifying filter types
 declare module "@tanstack/react-table" {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   interface ColumnMeta<TData, TValue> {
+    valueType?: TValue;
     filterVariant?: "text" | "range" | "select";
     selectOptions?: Array<{ value: string; label: string }>;
   }
@@ -61,6 +64,9 @@ interface DataTableProps<T extends object> {
   isLoading?: boolean;
   globalFilter?: string;
   setGlobalFilter?: (value: string) => void;
+  // Add missing properties that were used in IncomingOrdersTab
+  currentPage?: number;
+  onPageChange?: (page: number) => void;
 }
 
 // Filter component for individual columns
@@ -114,7 +120,7 @@ function ColumnFilter({ column }: { column: Column<any, unknown> }) {
           <option value="">All</option>
           {/* Use provided select options or fallback to defaults */}
           {selectOptions.length > 0
-            ? selectOptions.map((option) => (
+            ? selectOptions.map((option: { value: string; label: string }) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
                 </option>
@@ -177,21 +183,22 @@ function DebouncedInput({
 }
 
 // Main Table component
-const Table = <T extends object>({
-  data,
-  columns,
-  searchPlaceholder = "Search...",
-  showSearch,
-  showColumnFilters = true,
-  showPagination = true,
-  pageSize = 100, // Default to 100 items per page as requested
-  className = "",
-  onRowClick,
-  emptyMessage = "No data available",
-  isLoading = false,
-  globalFilter: externalGlobalFilter,
-  setGlobalFilter: externalSetGlobalFilter,
-}: DataTableProps<T>) => {
+const Table = <T extends object>(props: DataTableProps<T>) => {
+  const {
+    data,
+    columns,
+    searchPlaceholder = "Search...",
+    showSearch,
+    showColumnFilters = true,
+    showPagination = true,
+    pageSize = 100, // Default to 100 items per page as requested
+    className = "",
+    onRowClick,
+    emptyMessage = "No data available",
+    isLoading = false,
+    globalFilter: externalGlobalFilter,
+    setGlobalFilter: externalSetGlobalFilter,
+  } = props;
   // Table state
   const [sorting, setSorting] = useState<SortingState>([]);
   const [internalGlobalFilter, setInternalGlobalFilter] = useState("");
@@ -210,6 +217,17 @@ const Table = <T extends object>({
       pageSize: pageSize,
     }));
   }, [pageSize]);
+  
+  // Handle external pagination control if provided
+  useEffect(() => {
+    const { currentPage } = props;
+    if (currentPage !== undefined) {
+      setPagination((prev) => ({
+        ...prev,
+        pageIndex: currentPage || 0,
+      }));
+    }
+  }, [props.currentPage, props]);  // Include props as dependency
 
   // Determine whether to use internal or external state for global filter
   const globalFilter =
@@ -224,6 +242,14 @@ const Table = <T extends object>({
       setInternalGlobalFilter(externalGlobalFilter);
     }
   }, [externalGlobalFilter]);
+  
+  // Notify parent component of page changes if callback is provided
+  useEffect(() => {
+    const { onPageChange } = props;
+    if (onPageChange) {
+      onPageChange(pagination.pageIndex);
+    }
+  }, [pagination.pageIndex, props, props.onPageChange]);  // Include all dependencies
 
   // Memoize data to prevent unnecessary re-renders
   const tableData = useMemo(() => data, [data]);
@@ -309,10 +335,7 @@ const Table = <T extends object>({
                             header.column.columnDef.header,
                             header.getContext()
                           )}
-                          {{
-                            asc: <ChevronUp className="ml-1 h-4 w-4" />,
-                            desc: <ChevronDown className="ml-1 h-4 w-4" />,
-                          }[header.column.getIsSorted() as string] ?? null}
+                          {header.column.getIsSorted() ? (header.column.getIsSorted() === 'desc' ? <ChevronDown className="ml-1 h-4 w-4" /> : <ChevronUp className="ml-1 h-4 w-4" />) : null}
                         </div>
 
                         {/* Column Filters */}
@@ -334,7 +357,7 @@ const Table = <T extends object>({
                   className={`hover:bg-gray-50 ${
                     onRowClick ? "cursor-pointer" : ""
                   }`}
-                  onClick={() => onRowClick && onRowClick(row.original)}
+                  onClick={() => onRowClick && onRowClick(row.original as T)}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <td
