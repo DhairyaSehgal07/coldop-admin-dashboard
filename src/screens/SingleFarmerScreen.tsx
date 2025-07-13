@@ -21,6 +21,8 @@ import {
   Tag,
   BarChart2,
   TrendingUp,
+  Trash2,
+  AlertTriangle,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import TopBar from "../components/common/TopBar";
@@ -107,8 +109,10 @@ const SingleFarmerScreen = () => {
   const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [editedFarmer, setEditedFarmer] = useState<Farmer | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showOrders, setShowOrders] = useState(false);
   const [expandedOrders, setExpandedOrders] = useState<{[key: string]: boolean}>({});
@@ -212,6 +216,55 @@ const SingleFarmerScreen = () => {
 
   const handleCloseEditModal = () => {
     setIsEditModalOpen(false);
+  };
+
+  const handleOpenDeleteModal = () => {
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleCloseDeleteModal = () => {
+    setIsDeleteModalOpen(false);
+  };
+
+  const handleDeleteFarmer = async () => {
+    setDeleting(true);
+    setError(null);
+
+    try {
+      const response = await fetch(`${BASE_URL}/farmers/${farmerInfo._id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to delete farmer");
+      }
+
+      // Close the modal first
+      setIsDeleteModalOpen(false);
+
+      // Show success toast notification and wait for a short delay
+      toast.success("Farmer deleted successfully");
+
+      // Wait for 1.5 seconds to ensure toast is visible before navigation
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      // Navigate back
+      navigate(-1);
+
+    } catch (err) {
+      console.error("Error deleting farmer:", err);
+      const errorMessage =
+        err instanceof Error ? err.message : "An unknown error occurred";
+      toast.error(errorMessage);
+      setError(errorMessage);
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const handleInputChange = (
@@ -417,7 +470,7 @@ const SingleFarmerScreen = () => {
 
         {/* Scrollable Content Area */}
         <div className="flex-1 overflow-y-auto px-6 pb-6">
-          {/* Back Button and Edit Button */}
+          {/* Back Button and Action Buttons */}
           <div className="py-4 space-y-4 mb-2">
             {/* Back button on top */}
             <div>
@@ -430,14 +483,22 @@ const SingleFarmerScreen = () => {
               </button>
             </div>
 
-            {/* Edit button */}
-            <div>
+            {/* Action buttons */}
+            <div className="flex gap-2">
               <button
                 onClick={handleOpenEditModal}
                 className="inline-flex items-center justify-center rounded-md bg-amber-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-amber-600 transition-colors duration-200 shadow-sm"
               >
                 <Edit className="mr-2 h-4 w-4" />
                 Edit Farmer
+              </button>
+
+              <button
+                onClick={handleOpenDeleteModal}
+                className="inline-flex items-center justify-center rounded-md bg-red-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-red-600 transition-colors duration-200 shadow-sm"
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete Farmer
               </button>
             </div>
           </div>
@@ -1094,6 +1155,74 @@ const SingleFarmerScreen = () => {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {isDeleteModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-red-50">
+              <div className="flex items-center">
+                <AlertTriangle className="h-6 w-6 text-red-600 mr-2" />
+                <h2 className="text-xl font-bold text-gray-800">
+                  Delete Farmer
+                </h2>
+              </div>
+              <button
+                onClick={handleCloseDeleteModal}
+                className="text-gray-500 hover:text-gray-700 focus:outline-none"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            <div className="p-6">
+              <div className="mb-4">
+                <p className="text-gray-700 mb-2">
+                  Are you sure you want to delete this farmer?
+                </p>
+                <p className="text-sm text-gray-500">
+                  This action cannot be undone. All associated data will be permanently removed.
+                </p>
+              </div>
+
+              {error && (
+                <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-md text-sm">
+                  {error}
+                </div>
+              )}
+
+              <div className="flex justify-end space-x-3">
+                <button
+                  type="button"
+                  onClick={handleCloseDeleteModal}
+                  className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
+                  disabled={deleting}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDeleteFarmer}
+                  className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none disabled:bg-red-400"
+                  disabled={deleting}
+                >
+                  {deleting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Deleting...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Delete Farmer
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </div>
