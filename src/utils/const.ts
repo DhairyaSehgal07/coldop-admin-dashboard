@@ -1,3 +1,4 @@
-const BASE_URL = "https://coldop-backend-1gn6.onrender.com/api/super-admin";
+const BASE_URL =
+  "https://coldop-backend-cdeteah5aherhubj.centralindia-01.azurewebsites.net/";
 
 export { BASE_URL };
